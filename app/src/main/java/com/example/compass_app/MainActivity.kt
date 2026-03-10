@@ -12,6 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.compass_app.ui.theme.Compass_appTheme
+import androidx.compose.foundation.layout.Column
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,20 +22,28 @@ class MainActivity : ComponentActivity() {
         setContent {
             Compass_appTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    Column(modifier = Modifier.padding(innerPadding)) {
+                        Greeting("Samu")
+                        Kassu("JEPJUP")
+                    }
                 }
-            }
         }
     }
 }
 
-@Composable
+
+ @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     Text(
         text = "Hello $name!",
+        modifier = modifier
+    )
+}
+
+@Composable
+fun Kassu(hesu: String, modifier: Modifier = Modifier) {
+    Text(
+        text = "KASSU OLI TÄÄLLÄ $hesu",
         modifier = modifier
     )
 }
@@ -42,6 +52,8 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 fun GreetingPreview() {
     Compass_appTheme {
-        Greeting("Android")
+        Greeting("SAMU")
+        Kassu("")
+    }
     }
 }
