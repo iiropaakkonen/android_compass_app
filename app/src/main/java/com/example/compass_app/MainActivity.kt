@@ -14,6 +14,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.compass_app.ui.theme.Compass_appTheme
 import androidx.compose.foundation.layout.Column
 import kotlin.math.sqrt
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.windowInsetsEndWidth
+import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 
 
 class MainActivity : ComponentActivity() {
@@ -28,7 +38,7 @@ class MainActivity : ComponentActivity() {
                         val loc2 = Location(61.0f, 23.0f)
                         val loc3 = Location(20.45f, 22.26f)
                         val loc4 = Location(61.0f, 23.0f)
-                        Greeting("Samu")
+                        GreetingColumn()
                         DistanceDisplay(Distance(loc1, loc2))
                         DistanceDisplay(Distance(loc3, loc4))
                     }
@@ -38,13 +48,7 @@ class MainActivity : ComponentActivity() {
 }
 
 
- @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+ 
  fun Distance(location1: Location, location2: Location): Float
     {
         val dx = location1.lat - location2.lat
@@ -52,6 +56,47 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         return sqrt((dx * dx + dy * dy).toDouble()).toFloat()
         }
     }
+    @Composable
+ fun Greeting(name: String, modifier: Modifier = Modifier) {
+     val expanded = remember { mutableStateOf(false) }
+     val extraPadding = if (expanded.value) 48.dp else 0.dp
+     Surface(
+         color = MaterialTheme.colorScheme.primary,
+         modifier = modifier.padding(vertical = 4.dp, horizontal = 8.dp)
+     ) {
+         Row(modifier = Modifier.padding(24.dp)) {
+             Column(
+                 modifier = Modifier
+                     .weight(1f)
+                     .padding(bottom = extraPadding)
+
+             ) {
+                 Text(
+                     text = "Hello $name!"
+                 )
+                 Text(
+                     text = "Koira"
+                 )
+             }
+             ElevatedButton(
+                 onClick = {expanded.value = !expanded.value}
+             ) {
+                 Text(if(expanded.value) "Show less" else "Show more")
+             }
+         }
+     }
+}
+@Composable
+fun GreetingColumn(
+    modifier: Modifier = Modifier,
+    names: List<String> = listOf("Samu", "Antti")
+) {
+    Column(modifier = modifier.padding(vertical = 4.dp)) {
+        for (name in names) {
+            Greeting(name = name)
+        }
+    }
+}
 @Composable
 fun DistanceDisplay(result: Float, modifier: Modifier = Modifier) {
     if (result > 1.0f) {
