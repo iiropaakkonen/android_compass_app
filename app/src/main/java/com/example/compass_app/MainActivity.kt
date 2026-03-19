@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.compass_app.ui.theme.Compass_appTheme
 import androidx.compose.foundation.layout.Column
+import kotlin.math.sqrt
 
 
 class MainActivity : ComponentActivity() {
@@ -23,8 +24,13 @@ class MainActivity : ComponentActivity() {
             Compass_appTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Column(modifier = Modifier.padding(innerPadding)) {
+                        val loc1 = Location(60.45f, 22.26f)
+                        val loc2 = Location(61.0f, 23.0f)
+                        val loc3 = Location(20.45f, 22.26f)
+                        val loc4 = Location(61.0f, 23.0f)
                         Greeting("Samu")
-                        Kassu("JEPJUP")
+                        DistanceDisplay(Distance(loc1, loc2))
+                        DistanceDisplay(Distance(loc3, loc4))
                     }
                 }
         }
@@ -39,21 +45,18 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         modifier = modifier
     )
 }
-
-@Composable
-fun Kassu(hesu: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "KASSU OLI TÄÄLLÄ $hesu",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    Compass_appTheme {
-        Greeting("SAMU")
-        Kassu("")
+ fun Distance(location1: Location, location2: Location): Float
+    {
+        val dx = location1.lat - location2.lat
+        val dy = location1.lon - location2.lon
+        return sqrt((dx * dx + dy * dy).toDouble()).toFloat()
+        }
     }
+@Composable
+fun DistanceDisplay(result: Float, modifier: Modifier = Modifier) {
+    if (result > 1.0f) {
+        Text(text = "${"%.2f".format(result)} Kilometriä", modifier = modifier)
+    } else {
+        Text(text = "${Math.round(result*1000.0f)} Metriä" , modifier = modifier)
     }
 }
