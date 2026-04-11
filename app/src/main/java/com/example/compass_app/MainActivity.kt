@@ -1,107 +1,96 @@
 package com.example.compass_app
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.compass_app.ui.theme.Compass_appTheme
-import androidx.compose.foundation.layout.Column
-import kotlin.math.sqrt
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.windowInsetsEndWidth
-import androidx.compose.material3.ElevatedButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Button
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.compass_app.ui.theme.Compass_appTheme
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 
 class MainActivity : ComponentActivity() {
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         enableEdgeToEdge()
         setContent {
             Compass_appTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Column(modifier = Modifier.padding(innerPadding)) {
-                        val loc1 = Location(60.45f, 22.26f)
-                        val loc2 = Location(61.0f, 23.0f)
-                        val loc3 = Location(20.45f, 22.26f)
-                        val loc4 = Location(61.0f, 23.0f)
-                        GreetingColumn()
-                        DistanceDisplay(Distance(loc1, loc2))
-                        DistanceDisplay(Distance(loc3, loc4))
-                        val context = LocalContext.current
-                        Button(onClick = { openGoogleMaps(context, "Turku, Finland") }) {
-                            Text("Open Maps")
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
-    fun Greeting(name: String, modifier: Modifier = Modifier) {
-        val expanded = remember { mutableStateOf(false) }
-        val extraPadding = if (expanded.value) 48.dp else 0.dp
-        Surface(
-            color = MaterialTheme.colorScheme.primary,
-            modifier = modifier.padding(vertical = 4.dp, horizontal = 8.dp)
-        ) {
-            Row(modifier = Modifier.padding(24.dp)) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(bottom = extraPadding)
-
-                ) {
-                    Text(
-                        text = "Hello $name!"
-                    )
-                    Text(
-                        text = "Koira"
+                    LocationPermissionWrapper(
+                        fusedLocationClient = fusedLocationClient,
+                        modifier = Modifier.padding(innerPadding)
                     )
                 }
-                ElevatedButton(
-                    onClick = { expanded.value = !expanded.value }
-                ) {
-                    Text(if (expanded.value) "Show less" else "Show more")
+            }
+        }
+    }
+
+@Composable
+fun LocationPermissionWrapper(
+    fusedLocationClient: FusedLocationProviderClient,
+    modifier: Modifier = Modifier,
+    viewModel: NearbyViewModel = viewModel()
+) {
+    val context = LocalContext.current
+    var hasPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+        onResult = { permissions ->
+            hasPermission = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        }
+    )
+
+    if (hasPermission) {
+        // Start tracking location in the ViewModel
+        LaunchedEffect(Unit) {
+            viewModel.startLocationUpdates(fusedLocationClient)
+        }
+        NearbyPOIScreen(modifier, viewModel)
+    } else {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
+                Text(
+                    "This app needs location access to find points of interest near you.",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = {
+                    launcher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                }) {
+                    Text("Grant Location Permission")
                 }
             }
         }
     }
-
-    @Composable
-    fun GreetingColumn(
-        modifier: Modifier = Modifier,
-        names: List<String> = listOf("Samu", "Antti")
-    ) {
-        Column(modifier = modifier.padding(vertical = 4.dp)) {
-            for (name in names) {
-                Greeting(name = name)
-            }
-        }
-    }
-
-    @Composable
-    fun DistanceDisplay(result: Float, modifier: Modifier = Modifier) {
-        if (result > 1.0f) {
-            Text(text = "${"%.2f".format(result)} Kilometriä", modifier = modifier)
-        } else {
-            Text(text = "${Math.round(result * 1000.0f)} Metriä", modifier = modifier)
-        }
-    }
-
 }
