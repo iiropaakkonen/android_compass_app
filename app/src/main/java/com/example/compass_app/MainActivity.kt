@@ -15,8 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.material3.Button
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.compass_app.ui.theme.Compass_appTheme
@@ -41,6 +39,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 
 @Composable
 fun LocationPermissionWrapper(
