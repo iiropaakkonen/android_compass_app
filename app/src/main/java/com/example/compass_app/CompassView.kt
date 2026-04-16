@@ -59,5 +59,4 @@ fun CompassView(heading: Float, modifier: Modifier = Modifier) {
         }
         }
 
-
     }
