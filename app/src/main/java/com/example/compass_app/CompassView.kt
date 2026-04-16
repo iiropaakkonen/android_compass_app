@@ -20,7 +20,7 @@ fun CompassView(heading: Float, modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
         val cx = size.width / 2
         val cy = size.height / 2
-        val r = minOf(cx, cy) - 10f
+        val r = minOf(cx, cy) + 10f
 
         drawCircle(
             color = colorUsed,
@@ -41,22 +41,23 @@ fun CompassView(heading: Float, modifier: Modifier = Modifier) {
                     isAntiAlias = true
                 }
             )
+            val path = Path().apply {
+                moveTo(cx, cy - r * 0.6f)
+                lineTo(cx - r * 0.05f, cy)
+                lineTo(cx + r * 0.05f, cy)
+                close()
+            }
+            drawPath(path, color = Color.Red)
+
+            val southPath = Path().apply {
+                moveTo(cx, cy + r * 0.6f)
+                lineTo(cx - r * 0.05f, cy)
+                lineTo(cx + r * 0.05f, cy)
+                close()
+            }
+            drawPath(southPath, color = Color.Gray)
+        }
         }
 
-        val path = Path().apply {
-            moveTo(cx, cy - r * 0.6f)
-            lineTo(cx - r * 0.05f, cy)
-            lineTo(cx + r * 0.05f, cy)
-            close()
-        }
-        drawPath(path, color = Color.Red)
 
-        val southPath = Path().apply {
-            moveTo(cx, cy + r * 0.6f)
-            lineTo(cx - r * 0.05f, cy)
-            lineTo(cx + r * 0.05f, cy)
-            close()
-        }
-        drawPath(southPath, color = Color.Gray)
-        }
     }
