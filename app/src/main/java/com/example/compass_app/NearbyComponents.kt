@@ -10,7 +10,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -120,48 +123,67 @@ fun PoiInfoDialog(poi: PointOfInterest, onDismiss: () -> Unit) {
             Text(text = poi.name)
         },
         text = {
+            val usefulKeys = linkedMapOf(
+                "Type" to poi.locationType.substringAfter(":").replace("_", " ").capitalize(),
+                "Address" to listOfNotNull(
+                    poi.tags["addr:street"]?.let { street ->
+                        poi.tags["addr:housenumber"]?.let { num -> "$street $num" } ?: street
+                    }
+                ).firstOrNull(),
+                "Opening hours" to (poi.tags["opening_hours"]),
+                "Phone" to (poi.tags["phone"] ?: poi.tags["contact:phone"]),
+                "Website" to (poi.tags["website"] ?: poi.tags["contact:website"])
+            ).filterValues { it != null }
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "Category: ${poi.category.displayName}",
+                    text = poi.category.displayName,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Type: ${poi.locationType}",
-                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                
-                if (poi.tags.isNotEmpty()) {
-                    Text(text = "Details:", style = MaterialTheme.typography.titleSmall)
-                    poi.tags.forEach { (key, value) ->
-                        val displayKey = key.replace("addr:", "").replace("_", " ").capitalize()
-                        Row(modifier = Modifier.padding(vertical = 2.dp)) {
-                            Text(
-                                text = "$displayKey: ",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.width(100.dp)
-                            )
+                val uriHandler = LocalUriHandler.current
+                usefulKeys.forEach { (label, value) ->
+                    Row(modifier = Modifier.padding(vertical = 3.dp)) {
+                        Text(
+                            text = "$label: ",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.width(110.dp)
+                        )
+                        if (label == "Website") {
+                            val url = if (value!!.startsWith("http")) value else "https://$value"
                             Text(
                                 text = value,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                textDecoration = TextDecoration.Underline,
+                                modifier = Modifier.weight(1f).clickable { uriHandler.openUri(url) }
+                            )
+                        } else {
+                            Text(
+                                text = value!!,
                                 style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.weight(1f)
                             )
                         }
                     }
-                } else {
-                    Text(text = "No additional information available.", style = MaterialTheme.typography.bodySmall)
                 }
             }
         },
         confirmButton = {
+            val context = LocalContext.current
+            Button(onClick = {
+                openGoogleMapsCoordinates(context, poi.location.lat, poi.location.lon, poi.name)
+            }) {
+                Text("Open in Google Maps")
+            }
+        },
+        dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Close")
             }

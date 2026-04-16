@@ -10,3 +10,10 @@ fun openGoogleMaps(context: Context, address: String) {
     intent.setPackage("com.google.android.apps.maps")
     context.startActivity(intent)
 }
+
+fun openGoogleMapsCoordinates(context: Context, lat: Float, lon: Float, label: String) {
+    val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon(${Uri.encode(label)})")
+    val intent = Intent(Intent.ACTION_VIEW, uri)
+    intent.setPackage("com.google.android.apps.maps")
+    context.startActivity(intent)
+}

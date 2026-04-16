@@ -42,7 +42,6 @@ fun CompassView(heading: Float, modifier: Modifier = Modifier) {
                 }
             )
         }
-
         val path = Path().apply {
             moveTo(cx, cy - r * 0.6f)
             lineTo(cx - r * 0.05f, cy)
