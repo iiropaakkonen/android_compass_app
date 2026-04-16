@@ -130,10 +130,10 @@ fun MainAppContent(viewModel: NearbyViewModel) {
 }
 
 @Composable
-fun HeaderSection() {
+fun HeaderSection(modifier: Modifier = Modifier) {
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
