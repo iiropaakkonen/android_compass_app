@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.compass_app.ui.theme.Compass_appTheme
+<<<<<<< Updated upstream
 import androidx.compose.foundation.layout.Column
 import kotlin.math.sqrt
 import androidx.compose.foundation.layout.Row
@@ -30,6 +31,15 @@ import android.hardware.SensorManager
 import android.content.Context
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+=======
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import android.hardware.SensorManager
+
+
+//                         val heading by compass.heading.collectAsStateWithLifecycle()
+//                         Text(text = "Heading: ${"%.1f".format(heading)}°"
+>>>>>>> Stashed changes
 class MainActivity : ComponentActivity() {
     private lateinit var compass: CompassSensor
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,7 +53,29 @@ class MainActivity : ComponentActivity() {
         setContent {
             Compass_appTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+<<<<<<< Updated upstream
                     Column(modifier = Modifier.padding(innerPadding)) {
+=======
+                    Box(modifier = Modifier.padding(innerPadding)) {
+                        LocationPermissionWrapper(
+                            fusedLocationClient = fusedLocationClient
+                        )
+                    }
+                }
+            }
+        }
+    }
+    override fun onPause() {
+        super.onPause()
+        compass.stop()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        compass.start()
+    }
+}
+>>>>>>> Stashed changes
 
                         val loc1 = Location(60.45f, 22.26f)
                         val loc2 = Location(61.0f, 23.0f)
@@ -65,6 +97,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+<<<<<<< Updated upstream
     @Composable
     fun Greeting(name: String, modifier: Modifier = Modifier) {
         val expanded = remember { mutableStateOf(false) }
@@ -126,3 +159,6 @@ class MainActivity : ComponentActivity() {
         compass.start()
     }
 }
+=======
+}
+>>>>>>> Stashed changes
