@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.compass_app.ui.theme.Compass_appTheme
+import android.hardware.SensorManager
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 
@@ -53,6 +54,16 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        compass.stop()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        compass.start()
     }
 }
 
@@ -168,21 +179,4 @@ fun HeaderSection(modifier: Modifier = Modifier) {
         }
     }
 
-}
-@Composable
-fun DistanceDisplay(result: Float, modifier: Modifier = Modifier) {
-    if (result > 1.0f) {
-        Text(text = "${"%.2f".format(result)} Kilometriä", modifier = modifier)
-    } else {
-        Text(text = "${Math.round(result * 1000.0f)} Metriä", modifier = modifier)
-    }
-}
-override fun onPause() {
-    super.onPause()
-    compass.stop()
-}
-
-override fun onResume() {
-    super.onResume()
-    compass.start()
 }
