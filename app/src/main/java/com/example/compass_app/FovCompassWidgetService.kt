@@ -12,13 +12,13 @@ import android.hardware.SensorManager
 import android.os.IBinder
 import android.widget.RemoteViews
 
-class CompassWidgetService : Service(), SensorEventListener {
+class FovCompassWidgetService : Service(), SensorEventListener {
 
     private lateinit var sensorManager: SensorManager
     private var orientationSensor: Sensor? = null
 
-
-    private val bitmapSize = 200
+    private val bitmapWidth = 600
+    private val bitmapHeight = 200
 
     override fun onCreate() {
         super.onCreate()
@@ -40,30 +40,24 @@ class CompassWidgetService : Service(), SensorEventListener {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-
     override fun onSensorChanged(event: SensorEvent) {
-        val heading = event.values[0]
-        pushWidgetUpdate(heading)
+        pushWidgetUpdate(event.values[0])
     }
 
     override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
 
-
     private fun pushWidgetUpdate(heading: Float) {
         val manager = AppWidgetManager.getInstance(this)
         val widgetIds = manager.getAppWidgetIds(
-            ComponentName(this, CompassWidget::class.java)
+            ComponentName(this, FovCompassWidget::class.java)
         )
-
-        // No widgets on screen — nothing to update.
         if (widgetIds.isEmpty()) return
 
-        val bitmap = CompassWidgetRenderer.render(this, bitmapSize, bitmapSize, heading)
+        val bitmap = FovCompassWidgetRenderer.render(this, bitmapWidth, bitmapHeight, heading)
 
-        val views = RemoteViews(packageName, R.layout.widget_compass)
-        views.setImageViewBitmap(R.id.widget_compass_image, bitmap)
+        val views = RemoteViews(packageName, R.layout.widget_fov_compass)
+        views.setImageViewBitmap(R.id.widget_fov_compass_image, bitmap)
 
-        // Tapping the widget opens the main app
         val launchIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this,
@@ -71,7 +65,7 @@ class CompassWidgetService : Service(), SensorEventListener {
             launchIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
+        views.setOnClickPendingIntent(R.id.widget_fov_root, pendingIntent)
 
         manager.updateAppWidget(widgetIds, views)
     }
