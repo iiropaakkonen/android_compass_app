@@ -2,10 +2,12 @@ package com.example.compass_app
 
 import com.google.gson.annotations.SerializedName
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.GET
-import retrofit2.http.Query
+import retrofit2.http.Body
+import retrofit2.http.POST
 import java.util.concurrent.TimeUnit
 
 /**
@@ -50,8 +52,8 @@ data class OverpassElement(
 )
 
 interface OverpassApi {
-    @GET("interpreter")
-    suspend fun query(@Query("data") data: String): OverpassResponse
+    @POST("interpreter")
+    suspend fun query(@Body data: okhttp3.RequestBody): OverpassResponse
 }
 
 /**
@@ -61,7 +63,7 @@ class LocationService {
 
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
@@ -88,8 +90,10 @@ class LocationService {
             out body;
         """.trimIndent()
 
+        val body = query.toRequestBody("application/x-www-form-urlencoded".toMediaType())
+
         return try {
-            val response = api.query(query)
+            val response = api.query(body)
             response.elements.mapNotNull { element ->
                 val tags = element.tags ?: return@mapNotNull null
                 val name = tags["name"]
