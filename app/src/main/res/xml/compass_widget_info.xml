@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AppWidgetProviderInfo — metadata Android reads to know how to present the widget.
+
+    minWidth/minHeight: the smallest size the widget can be placed at (in dp).
+        110×110 roughly maps to a 2×2 cell grid on most launchers.
+
+    updatePeriodMillis: how often Android calls onUpdate() via alarm.
+        Android enforces a minimum of 1800000ms (30 minutes) regardless of what
+        you set here. Real-time updates come from CompassWidgetService, not this.
+        Setting 1800000 means Android will restart the service if it has been
+        killed, at most once every 30 minutes.
+
+    resizeMode: lets the user drag the widget to a larger size on the home screen.
+
+    widgetCategory: restricts where the widget can be placed (home screen only here).
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/widget_compass"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:description="@string/app_name" />

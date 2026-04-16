@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Widget layout. Only RemoteViews-compatible views are allowed here — custom
+    views, Compose, or anything from a library will crash the launcher.
+
+    FrameLayout wraps an ImageView that receives the Bitmap produced by
+    CompassWidgetRenderer. The FrameLayout is also the tap target: a
+    PendingIntent is attached to widget_root in CompassWidgetService so tapping
+    anywhere on the widget opens MainActivity.
+
+    The 8dp padding gives a small gap between the widget edge and the circle so
+    it doesn't look cramped on the home screen grid.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="8dp">
+
+    <ImageView
+        android:id="@+id/widget_compass_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        android:contentDescription="Compass" />
+
+</FrameLayout>
