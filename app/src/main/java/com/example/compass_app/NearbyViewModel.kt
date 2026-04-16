@@ -178,11 +178,11 @@ class NearbyViewModel : ViewModel() {
 
         // Filter POIs within 1km radius and sort by distance
         val filteredPois = allCachedPois.filter { poi ->
-            currentLoc.distanceTo(poi.location) <= 1.0f // 1km radius
+            distanceTo(currentLoc, poi.location) <= 1.0f // 1km radius
         }
 
         pois = filteredPois.sortedBy { poi ->
-            currentLoc.distanceTo(poi.location)
+            distanceTo(currentLoc, poi.location)
         }
 
         val cacheStats = tileCache.getStats()
@@ -193,8 +193,8 @@ class NearbyViewModel : ViewModel() {
         if (pois.isNotEmpty()) {
             val nearest = pois.first()
             val farthest = pois.last()
-            Log.d("TileCache", "  Nearest POI: ${nearest.name} (${String.format("%.0fm", currentLoc.distanceTo(nearest.location) * 1000)})")
-            Log.d("TileCache", "  Farthest POI: ${farthest.name} (${String.format("%.0fm", currentLoc.distanceTo(farthest.location) * 1000)})")
+            Log.d("TileCache", "  Nearest POI: ${nearest.name} (${String.format("%.0fm", distanceTo(currentLoc, nearest.location) * 1000)})")
+            Log.d("TileCache", "  Farthest POI: ${farthest.name} (${String.format("%.0fm", distanceTo(currentLoc, farthest.location) * 1000)})")
         }
     }
 

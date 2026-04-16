@@ -46,7 +46,7 @@ fun NearbyPOIScreen(
 
             viewModel.userLocation?.let { loc ->
                 val sortedPois = viewModel.pois
-                    .map { it to loc.distanceTo(it.location) }
+                    .map { it to distanceTo(loc, it.location) }
                     .sortedBy { it.second }
 
                 if (sortedPois.isEmpty() && !viewModel.isLoading) {

@@ -15,6 +15,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -45,7 +46,7 @@ class MainActivity : ComponentActivity() {
             Compass_appTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
-                        LocationPermissionWrapper(fusedLocationClient = fusedLocationClient)
+                        LocationPermissionWrapper(fusedLocationClient = fusedLocationClient, compassHeading = compass.heading)
                     }
                 }
             }
@@ -66,6 +67,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun LocationPermissionWrapper(
     fusedLocationClient: FusedLocationProviderClient,
+    compassHeading: StateFlow<Float>,
     viewModel: NearbyViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -85,7 +87,7 @@ fun LocationPermissionWrapper(
 
     if (hasPermission) {
         LaunchedEffect(Unit) { viewModel.startLocationUpdates(fusedLocationClient) }
-        MainAppContent(viewModel = viewModel)
+        MainAppContent(viewModel = viewModel, compassHeading = compassHeading)
     } else {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
@@ -102,13 +104,13 @@ fun LocationPermissionWrapper(
 }
 
 @Composable
-fun MainAppContent(viewModel: NearbyViewModel) {
+fun MainAppContent(viewModel: NearbyViewModel, compassHeading: StateFlow<Float>) {
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     var headerHeight by remember { mutableStateOf(150.dp) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        HeaderSection(modifier = Modifier.height(headerHeight))
+        HeaderSection(modifier = Modifier.height(headerHeight), compassHeading = compassHeading)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -130,7 +132,9 @@ fun MainAppContent(viewModel: NearbyViewModel) {
 }
 
 @Composable
-fun HeaderSection(modifier: Modifier = Modifier) {
+fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float>) {
+    val compassNorth by compassHeading.collectAsState()
+
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer,
         modifier = modifier.fillMaxWidth(),
@@ -144,14 +148,13 @@ fun HeaderSection(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
-            var heading by remember { mutableStateOf(0f) }
 
             CompassView(
-                heading = heading,
-                modifier = Modifier.size(200.dp)
+                heading = compassNorth,
+                modifier = Modifier
+                    .size(200.dp)
                     .padding(16.dp)
             )
-
-            }
         }
     }
+}

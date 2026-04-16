@@ -24,7 +24,6 @@ class CompassSensor(private val sensorManager: SensorManager) : SensorEventListe
     }
 
     override fun onSensorChanged(event: SensorEvent) {
-        //Most important function
         var degree = Math.round(event.values[0])
         _heading.value = degree.toFloat()
     }
