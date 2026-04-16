@@ -26,13 +26,22 @@ import com.example.compass_app.ui.theme.Compass_appTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 
+
+//                         val heading by compass.heading.collectAsStateWithLifecycle()
+//                         Text(text = "Heading: ${"%.1f".format(heading)}°"
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-
+    private lateinit var compass: CompassSensor
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         enableEdgeToEdge()
+
+        val sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        compass = CompassSensor(sensorManager)
+        compass.start()
+
         setContent {
             Compass_appTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -158,4 +167,22 @@ fun HeaderSection(modifier: Modifier = Modifier) {
             )
         }
     }
+
+}
+@Composable
+fun DistanceDisplay(result: Float, modifier: Modifier = Modifier) {
+    if (result > 1.0f) {
+        Text(text = "${"%.2f".format(result)} Kilometriä", modifier = modifier)
+    } else {
+        Text(text = "${Math.round(result * 1000.0f)} Metriä", modifier = modifier)
+    }
+}
+override fun onPause() {
+    super.onPause()
+    compass.stop()
+}
+
+override fun onResume() {
+    super.onResume()
+    compass.start()
 }
