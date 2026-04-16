@@ -17,7 +17,7 @@ class FovCompassWidgetService : Service(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private var orientationSensor: Sensor? = null
 
-    private val bitmapWidth = 600
+    private val bitmapWidth = 800
     private val bitmapHeight = 200
 
     override fun onCreate() {
