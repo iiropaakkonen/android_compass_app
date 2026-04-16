@@ -8,11 +8,16 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -21,17 +26,25 @@ import com.example.compass_app.ui.theme.Compass_appTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 
+
+//                         val heading by compass.heading.collectAsStateWithLifecycle()
+//                         Text(text = "Heading: ${"%.1f".format(heading)}°"
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-
+    private lateinit var compass: CompassSensor
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         enableEdgeToEdge()
+
+        val sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        compass = CompassSensor(sensorManager)
+        compass.start()
+
         setContent {
             Compass_appTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    // Apply the innerPadding from Scaffold here to handle status bars
                     Box(modifier = Modifier.padding(innerPadding)) {
                         LocationPermissionWrapper(
                             fusedLocationClient = fusedLocationClient
@@ -98,12 +111,36 @@ fun LocationPermissionWrapper(
 fun MainAppContent(
     viewModel: NearbyViewModel
 ) {
-    // Column will stack Header and the Screen
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
+    
+    // Initial height for the header
+    var headerHeight by remember { mutableStateOf(150.dp) }
+    
     Column(modifier = Modifier.fillMaxSize()) {
-        HeaderSection()
+        HeaderSection(modifier = Modifier.height(headerHeight))
         
-        // We pass a modifier with weight(1f) to NearbyPOIScreen
-        // This tells it to only take the REMAINING space.
+        // The draggable divider
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .background(MaterialTheme.colorScheme.outlineVariant)
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        // Update height based on drag. dragAmount.y is in pixels, 
+                        // so we convert to dp (approximate for simplicity here)
+                        val delta = dragAmount.y / (configuration.densityDpi / 160f)
+                        val newHeight = headerHeight + delta.dp
+                        // Constraints to keep UI usable
+                        if (newHeight > 50.dp && newHeight < screenHeight * 0.7f) {
+                            headerHeight = newHeight
+                        }
+                    }
+                }
+        )
+        
         NearbyPOIScreen(
             modifier = Modifier.weight(1f),
             viewModel = viewModel
@@ -112,10 +149,10 @@ fun MainAppContent(
 }
 
 @Composable
-fun HeaderSection() {
+fun HeaderSection(modifier: Modifier = Modifier) {
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -130,4 +167,22 @@ fun HeaderSection() {
             )
         }
     }
+
+}
+@Composable
+fun DistanceDisplay(result: Float, modifier: Modifier = Modifier) {
+    if (result > 1.0f) {
+        Text(text = "${"%.2f".format(result)} Kilometriä", modifier = modifier)
+    } else {
+        Text(text = "${Math.round(result * 1000.0f)} Metriä", modifier = modifier)
+    }
+}
+override fun onPause() {
+    super.onPause()
+    compass.stop()
+}
+
+override fun onResume() {
+    super.onResume()
+    compass.start()
 }
