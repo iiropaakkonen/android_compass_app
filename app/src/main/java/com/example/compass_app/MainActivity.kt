@@ -31,10 +31,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             Compass_appTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    LocationPermissionWrapper(
-                        fusedLocationClient = fusedLocationClient,
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    // Apply the innerPadding from Scaffold here to handle status bars
+                    Box(modifier = Modifier.padding(innerPadding)) {
+                        LocationPermissionWrapper(
+                            fusedLocationClient = fusedLocationClient
+                        )
+                    }
                 }
             }
         }
@@ -44,7 +46,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun LocationPermissionWrapper(
     fusedLocationClient: FusedLocationProviderClient,
-    modifier: Modifier = Modifier,
     viewModel: NearbyViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -66,13 +67,12 @@ fun LocationPermissionWrapper(
     )
 
     if (hasPermission) {
-        // Start tracking location in the ViewModel
         LaunchedEffect(Unit) {
             viewModel.startLocationUpdates(fusedLocationClient)
         }
-        NearbyPOIScreen(modifier, viewModel)
+        MainAppContent(viewModel = viewModel)
     } else {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
                 Text(
                     "This app needs location access to find points of interest near you.",
@@ -90,6 +90,44 @@ fun LocationPermissionWrapper(
                     Text("Grant Location Permission")
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun MainAppContent(
+    viewModel: NearbyViewModel
+) {
+    // Column will stack Header and the Screen
+    Column(modifier = Modifier.fillMaxSize()) {
+        HeaderSection()
+        
+        // We pass a modifier with weight(1f) to NearbyPOIScreen
+        // This tells it to only take the REMAINING space.
+        NearbyPOIScreen(
+            modifier = Modifier.weight(1f),
+            viewModel = viewModel
+        )
+    }
+}
+
+@Composable
+fun HeaderSection() {
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Explore Nearby",
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                text = "Discover interesting places around you.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+            )
         }
     }
 }
