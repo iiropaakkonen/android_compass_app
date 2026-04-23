@@ -69,7 +69,7 @@ fun NearbyPOIScreen(
                                 }
                             },
                             onClick = {
-                                viewModel.activeFilters = if (allSelected) emptySet()
+                                viewModel.activeFilters = if (allSelected) setOf(allCategories.first())
                                 else allCategories.toSet()
                             }
                         )

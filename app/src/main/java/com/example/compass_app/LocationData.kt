@@ -1,5 +1,6 @@
 package com.example.compass_app
 
+import android.util.Log
 import com.google.gson.annotations.SerializedName
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -68,13 +69,18 @@ class LocationService {
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val api: OverpassApi = Retrofit.Builder()
-        // Using a more reliable public mirror
-        .baseUrl("https://overpass.kumi.systems/api/")
+    private fun buildApi(baseUrl: String): OverpassApi = Retrofit.Builder()
+        .baseUrl(baseUrl)
         .client(okHttpClient)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
         .create(OverpassApi::class.java)
+
+    private val apiEndpoints = listOf(
+        "https://overpass.private.coffee/api/",
+        "https://overpass-api.de/api/",
+        "https://lz4.overpass-api.de/api/"
+    )
 
     suspend fun fetchNearbyPOIs(lat: Float, lon: Float, radius: Int = 1000): List<PointOfInterest> {
         val query = """
@@ -91,35 +97,46 @@ class LocationService {
             out body;
         """.trimIndent()
 
-        val body = query.toRequestBody("application/x-www-form-urlencoded".toMediaType())
+        val encodedQuery = java.net.URLEncoder.encode(query, "UTF-8")
+        val body = "data=$encodedQuery".toRequestBody("application/x-www-form-urlencoded".toMediaType())
 
-        return try {
-            val response = api.query(body)
-            response.elements.mapNotNull { element ->
-                val tags = element.tags ?: return@mapNotNull null
-                val name = tags["name"]
-                
-                // Filter out unnamed POIs, office tags, or unwanted amenity types
-                val amenity = tags["amenity"]
-                if (name.isNullOrBlank() || tags.containsKey("office") ||
-                    amenity in listOf("parking_entrance", "bicycle_rental")) return@mapNotNull null
+        Log.d("OverpassAPI", "Fetching POIs: lat=$lat, lon=$lon, radius=${radius}m")
 
-                val category = getCategoryFromTags(tags)
-                
-                PointOfInterest(
-                    id = element.id,
-                    name = name,
-                    locationType = classifyPoi(tags),
-                    category = category,
-                    location = Location(element.lat, element.lon),
-                    tags = tags
-                )
+        var lastException: Exception? = null
+        for (endpoint in apiEndpoints) {
+            Log.d("OverpassAPI", "Trying endpoint: $endpoint")
+            val start = System.currentTimeMillis()
+            try {
+                val response = buildApi(endpoint).query(body)
+                val elapsed = System.currentTimeMillis() - start
+                Log.d("OverpassAPI", "✓ $endpoint responded in ${elapsed}ms, elements=${response.elements.size}")
+
+                val pois = response.elements.mapNotNull { element ->
+                    val tags = element.tags ?: return@mapNotNull null
+                    val name = tags["name"]
+                    val amenity = tags["amenity"]
+                    if (name.isNullOrBlank() || tags.containsKey("office") ||
+                        amenity in listOf("parking_entrance", "bicycle_rental")) return@mapNotNull null
+
+                    PointOfInterest(
+                        id = element.id,
+                        name = name,
+                        locationType = classifyPoi(tags),
+                        category = getCategoryFromTags(tags),
+                        location = Location(element.lat, element.lon),
+                        tags = tags
+                    )
+                }
+                Log.d("OverpassAPI", "  → ${pois.size} named POIs after filtering")
+                return pois
+            } catch (e: Exception) {
+                val elapsed = System.currentTimeMillis() - start
+                Log.e("OverpassAPI", "✗ $endpoint failed after ${elapsed}ms: ${e::class.simpleName}: ${e.message}")
+                lastException = e
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // Rethrow so the ViewModel can see the error message
-            throw e
         }
+        Log.e("OverpassAPI", "All endpoints failed")
+        throw lastException!!
     }
 
     private fun classifyPoi(tags: Map<String, String>): String {

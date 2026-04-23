@@ -19,6 +19,16 @@ fun distanceTo(location1: Location, location2: Location): Float {
     return (sqrt(dx * dx + dy * dy) / 1000.0).toFloat()
 }
 
+fun bearingToFloat(from: Location, to: Location): Float {
+    val lat1 = from.lat * (PI / 180.0)
+    val lat2 = to.lat * (PI / 180.0)
+    val dLon = (to.lon - from.lon) * (PI / 180.0)
+
+    val x = sin(dLon) * cos(lat2)
+    val y = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
+    return ((atan2(x, y) * (180.0 / PI) + 360.0) % 360.0).toFloat()
+}
+
 fun bearingTo(from: Location, to: Location): String {
     val lat1 = from.lat * (PI / 180.0)
     val lat2 = to.lat * (PI / 180.0)

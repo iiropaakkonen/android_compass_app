@@ -107,10 +107,10 @@ fun LocationPermissionWrapper(
 fun MainAppContent(viewModel: NearbyViewModel, compassHeading: StateFlow<Float>) {
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
-    var headerHeight by remember { mutableStateOf(150.dp) }
+    var headerHeight by remember { mutableStateOf(280.dp) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        HeaderSection(modifier = Modifier.height(headerHeight), compassHeading = compassHeading)
+        HeaderSection(modifier = Modifier.height(headerHeight), compassHeading = compassHeading, viewModel = viewModel)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -132,7 +132,7 @@ fun MainAppContent(viewModel: NearbyViewModel, compassHeading: StateFlow<Float>)
 }
 
 @Composable
-fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float>) {
+fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float>, viewModel: NearbyViewModel) {
     val compassNorth by compassHeading.collectAsState()
 
     Surface(
@@ -140,21 +140,46 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(vertical = 8.dp).fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "Explore Nearby",
                 style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(horizontal = 16.dp)
             )
+
+            Spacer(modifier = Modifier.weight(1f))
 
             CompassView(
                 heading = compassNorth,
+                pois = viewModel.pois.filter { it.category in viewModel.activeFilters },
+                userLocation = viewModel.userLocation,
+                maxDistanceM = viewModel.maxCompassDistanceM,
+                onPoiClick = { viewModel.selectedPoi = it },
                 modifier = Modifier
-                    .size(200.dp)
-                    .padding(16.dp)
+                    .fillMaxWidth()
+                    .aspectRatio(2.5f)
             )
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${viewModel.maxCompassDistanceM.toInt()}m",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.width(48.dp)
+                )
+                Slider(
+                    value = viewModel.maxCompassDistanceM,
+                    onValueChange = { viewModel.maxCompassDistanceM = it },
+                    valueRange = 100f..1000f,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }
