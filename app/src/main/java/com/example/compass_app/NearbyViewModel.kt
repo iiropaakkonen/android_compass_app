@@ -26,6 +26,29 @@ class NearbyViewModel : ViewModel() {
 
     var selectedPoi by mutableStateOf<PointOfInterest?>(null)
 
+    var maxCompassDistanceM by mutableStateOf(1000f)
+
+    var compassLocked by mutableStateOf(false)
+        private set
+    var lockedHeading by mutableStateOf(0f)
+        private set
+
+    fun toggleCompassLock(currentHeading: Float) {
+        if (!compassLocked) lockedHeading = currentHeading
+        compassLocked = !compassLocked
+    }
+
+    var activeFilters by mutableStateOf(PoiCategory.entries.toSet())
+
+    fun toggleFilter(category: PoiCategory) {
+        activeFilters = if (activeFilters.contains(category)) {
+            if (activeFilters.size == 1) activeFilters // keep at least one selected
+            else activeFilters - category
+        } else {
+            activeFilters + category
+        }
+    }
+
     // Tile-based caching
     private val tileCache = TileCache(ttlMinutes = 15)
     private var currentTile: TileCoordinate? = null

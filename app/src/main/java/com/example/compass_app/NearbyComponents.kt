@@ -8,6 +8,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -21,6 +25,10 @@ fun NearbyPOIScreen(
     modifier: Modifier = Modifier,
     viewModel: NearbyViewModel
 ) {
+    var filterMenuExpanded by remember { mutableStateOf(false) }
+    val allCategories = PoiCategory.entries
+    val allSelected = viewModel.activeFilters.size == allCategories.size
+
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -31,8 +39,62 @@ fun NearbyPOIScreen(
                 text = "Nearby Locations",
                 style = MaterialTheme.typography.headlineSmall
             )
-            IconButton(onClick = { viewModel.refreshPOIs() }) {
-                Text("🔄")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box {
+                    OutlinedButton(
+                        onClick = { filterMenuExpanded = true },
+                        colors = if (!allSelected)
+                            ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                        else
+                            ButtonDefaults.outlinedButtonColors()
+                    ) {
+                        Text("Filter")
+                    }
+                    DropdownMenu(
+                        expanded = filterMenuExpanded,
+                        onDismissRequest = { filterMenuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Checkbox(
+                                        checked = allSelected,
+                                        onCheckedChange = null
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        if (allSelected) "Exclude All" else "Include All",
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            },
+                            onClick = {
+                                viewModel.activeFilters = if (allSelected) emptySet()
+                                else allCategories.toSet()
+                            }
+                        )
+                        HorizontalDivider()
+                        allCategories.forEach { category ->
+                            val checked = viewModel.activeFilters.contains(category)
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Checkbox(
+                                            checked = checked,
+                                            onCheckedChange = null
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(category.displayName)
+                                    }
+                                },
+                                onClick = { viewModel.toggleFilter(category) }
+                            )
+                        }
+                    }
+                }
+                IconButton(onClick = { viewModel.refreshPOIs() }) {
+                    Text("🔄")
+                }
             }
         }
 
@@ -49,6 +111,7 @@ fun NearbyPOIScreen(
 
             viewModel.userLocation?.let { loc ->
                 val sortedPois = viewModel.pois
+                    .filter { it.category in viewModel.activeFilters }
                     .map { it to distanceTo(loc, it.location) }
                     .sortedBy { it.second }
 
@@ -60,6 +123,7 @@ fun NearbyPOIScreen(
                             POI_Item(
                                 poi = poi,
                                 distance = distance,
+                                bearing = bearingTo(loc, poi.location),
                                 onClick = { viewModel.selectedPoi = poi }
                             )
                         }
@@ -81,7 +145,7 @@ fun NearbyPOIScreen(
 }
 
 @Composable
-fun POI_Item(poi: PointOfInterest, distance: Float, onClick: () -> Unit) {
+fun POI_Item(poi: PointOfInterest, distance: Float, bearing: String, onClick: () -> Unit) {
     Surface(
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant,
@@ -95,7 +159,14 @@ fun POI_Item(poi: PointOfInterest, distance: Float, onClick: () -> Unit) {
                 Text(text = poi.name, style = MaterialTheme.typography.titleMedium)
                 Text(text = poi.category.displayName, style = MaterialTheme.typography.bodySmall)
             }
-            DistanceDisplay(result = distance)
+            Column(horizontalAlignment = Alignment.End) {
+                DistanceDisplay(result = distance)
+                Text(
+                    text = bearing,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
         }
     }
 }

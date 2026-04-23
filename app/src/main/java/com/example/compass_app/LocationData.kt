@@ -26,16 +26,17 @@ data class PointOfInterest(
  * Enum for filtering POIs by category, mapped from the Python script logic.
  */
 enum class PoiCategory(val displayName: String) {
-    FOOD_AND_DRINK("Food & Drink"),
-    ACCOMMODATION("Accommodation"),
-    SIGHTSEEING_AND_CULTURE("Sightseeing & Culture"),
-    LEISURE_AND_ACTIVITIES("Leisure & Activities"),
-    HEALTH("Health"),
-    MONEY("Money"),
-    TRANSPORT("Transport"),
-    GROCERY_AND_FOOD_SHOPS("Grocery & Food Shops"),
-    RETAIL_SHOPPING("Retail Shopping"),
-    OTHER("Other")
+    FOOD_AND_DRINK("🍽️ Food & Drink"),
+    ACCOMMODATION("🏨 Accommodation"),
+    SIGHTSEEING_AND_CULTURE("🏛️ Sightseeing & Culture"),
+    LEISURE_AND_ACTIVITIES("🎭 Leisure & Activities"),
+    HEALTH("🏥 Health"),
+    MONEY("💳 Money"),
+    TRANSPORT("🚌 Transport"),
+    GROCERY_AND_FOOD_SHOPS("🛒 Grocery & Food Shops"),
+    RETAIL_SHOPPING("🛍️ Retail Shopping"),
+    SERVICES("✂️ Services"),
+    OTHER("📍 Other")
 }
 
 // --- Overpass API Models ---
@@ -146,6 +147,11 @@ class LocationService {
             amenity in listOf("atm", "bank", "bureau_de_change") -> PoiCategory.MONEY
             amenity in listOf("ferry_terminal", "taxi", "fuel") -> PoiCategory.TRANSPORT
             shop in listOf("supermarket", "convenience", "kiosk", "bakery", "deli", "butcher") -> PoiCategory.GROCERY_AND_FOOD_SHOPS
+            shop in listOf(
+                "hairdresser", "barber", "massage", "beauty", "nail_salon", "tattoo",
+                "laundry", "dry_cleaning", "pet_grooming", "travel_agency", "copyshop",
+                "photo", "optician", "car_wash", "funeral_directors", "alterations"
+            ) -> PoiCategory.SERVICES
             shop != null -> PoiCategory.RETAIL_SHOPPING
             else -> PoiCategory.OTHER
         }

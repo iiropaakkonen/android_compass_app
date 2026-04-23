@@ -1,7 +1,6 @@
 package com.example.compass_app
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.SensorManager
 import android.os.Bundle
@@ -22,8 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.graphics.Color
-import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -137,15 +134,6 @@ fun MainAppContent(viewModel: NearbyViewModel, compassHeading: StateFlow<Float>)
 @Composable
 fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float>) {
     val compassNorth by compassHeading.collectAsState()
-    val context = LocalContext.current
-    val primaryColor = MaterialTheme.colorScheme.primary
-
-    SideEffect {
-        context.getSharedPreferences("widget_prefs", Context.MODE_PRIVATE)
-            .edit()
-            .putInt("primary_color", primaryColor.toArgb())
-            .apply()
-    }
 
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer,
