@@ -32,6 +32,78 @@ fun NearbyPOIScreen(
     viewModel: NearbyViewModel
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
+    var filterMenuExpanded by remember { mutableStateOf(false) }
+    val allCategories = PoiCategory.entries
+    val allSelected = viewModel.activeFilters.size == allCategories.size
+
+    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Nearby Locations",
+                style = MaterialTheme.typography.headlineSmall
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box {
+                    OutlinedButton(
+                        onClick = { filterMenuExpanded = true },
+                        colors = if (!allSelected)
+                            ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                        else
+                            ButtonDefaults.outlinedButtonColors()
+                    ) {
+                        Text("Filter")
+                    }
+                    DropdownMenu(
+                        expanded = filterMenuExpanded,
+                        onDismissRequest = { filterMenuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Checkbox(
+                                        checked = allSelected,
+                                        onCheckedChange = null
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        if (allSelected) "Exclude All" else "Include All",
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            },
+                            onClick = {
+                                viewModel.activeFilters = if (allSelected) setOf(allCategories.first())
+                                else allCategories.toSet()
+                            }
+                        )
+                        HorizontalDivider()
+                        allCategories.forEach { category ->
+                            val checked = viewModel.activeFilters.contains(category)
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Checkbox(
+                                            checked = checked,
+                                            onCheckedChange = null
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(category.displayName)
+                                    }
+                                },
+                                onClick = { viewModel.toggleFilter(category) }
+                            )
+                        }
+                    }
+                }
+                IconButton(onClick = { viewModel.refreshPOIs() }) {
+                    Text("🔄")
+                }
+            }
+        }
 
     Box(modifier = modifier) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -83,6 +155,23 @@ fun NearbyPOIScreen(
                                     onClick = { viewModel.selectedPoi = poi }
                                 )
                             }
+            viewModel.userLocation?.let { loc ->
+                val sortedPois = viewModel.pois
+                    .filter { it.category in viewModel.activeFilters }
+                    .map { it to distanceTo(loc, it.location) }
+                    .sortedBy { it.second }
+
+                if (sortedPois.isEmpty() && !viewModel.isLoading) {
+                    Text(text = "No locations found nearby.")
+                } else {
+                    LazyColumn {
+                        items(sortedPois) { (poi, distance) ->
+                            POI_Item(
+                                poi = poi,
+                                distance = distance,
+                                bearing = bearingTo(loc, poi.location),
+                                onClick = { viewModel.selectedPoi = poi }
+                            )
                         }
                     }
                 }
@@ -133,8 +222,8 @@ fun POI_Item(
     isFavorited: Boolean,
     isCustom: Boolean,
     onFavoriteClick: () -> Unit,
-    onClick: () -> Unit
-) {
+    onClick: () -> Unit,
+     bearing: String
     Surface(
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant,
@@ -171,7 +260,14 @@ fun POI_Item(
                             else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            DistanceDisplay(result = distance)
+            Column(horizontalAlignment = Alignment.End) {
+                DistanceDisplay(result = distance)
+                Text(
+                    text = bearing,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
         }
     }
 }
