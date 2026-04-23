@@ -98,8 +98,10 @@ class LocationService {
                 val tags = element.tags ?: return@mapNotNull null
                 val name = tags["name"]
                 
-                // Filter out unnamed POIs or those that have an 'office' tag
-                if (name.isNullOrBlank() || tags.containsKey("office")) return@mapNotNull null
+                // Filter out unnamed POIs, office tags, or unwanted amenity types
+                val amenity = tags["amenity"]
+                if (name.isNullOrBlank() || tags.containsKey("office") ||
+                    amenity in listOf("parking_entrance", "bicycle_rental")) return@mapNotNull null
 
                 val category = getCategoryFromTags(tags)
                 
