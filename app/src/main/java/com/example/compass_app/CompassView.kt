@@ -36,7 +36,7 @@ fun CompassView(
     maxDistanceM: Float = 1000f,
     onPoiClick: (PointOfInterest) -> Unit = {}
 ) {
-    val colorUsed = MaterialTheme.colorScheme.primary
+    val colorUsed = MaterialTheme.colorScheme.secondary
     val density = LocalDensity.current
     val context = LocalContext.current
 
