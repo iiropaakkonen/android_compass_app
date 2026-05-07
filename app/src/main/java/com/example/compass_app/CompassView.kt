@@ -2,6 +2,7 @@ package com.example.compass_app
 
 import androidx.compose.foundation.Canvas
 import android.annotation.SuppressLint
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
