@@ -12,7 +12,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.*
 import kotlinx.coroutines.launch
 
-class NearbyViewModel(application: Application) : AndroidViewModel(application) {
+class   NearbyViewModel(application: Application) : AndroidViewModel(application) {
     var userLocation by mutableStateOf<Location?>(null)
         private set
 

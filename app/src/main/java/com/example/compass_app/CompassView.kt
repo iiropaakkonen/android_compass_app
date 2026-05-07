@@ -1,8 +1,9 @@
 package com.example.compass_app
 
-import androidx.compose.foundation.Canvas
 import android.annotation.SuppressLint
-import androidx.compose.ui.graphics.Color
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -12,13 +13,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import kotlin.math.*
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
@@ -33,6 +38,7 @@ fun CompassView(
 ) {
     val colorUsed = MaterialTheme.colorScheme.primary
     val density = LocalDensity.current
+    val context = LocalContext.current
 
     BoxWithConstraints(modifier = modifier) {
         val widthPx = constraints.maxWidth.toFloat()
@@ -40,12 +46,19 @@ fun CompassView(
         val pxPerDp = density.density
 
         val cx = widthPx / 2f
-        
+
         // Compass size: Encompass ~75% of the screen width
-        val arcR = widthPx * 0.375f 
+        val arcR = widthPx * 0.375f
         val arcCenterY = heightPx
-        
-        val poiDotRadius = 8f * pxPerDp
+
+        val poiIconSizePx = (20f * pxPerDp).toInt()
+
+        val categoryIcons = remember(context, poiIconSizePx) {
+            PoiCategory.entries.associateWith { category ->
+                ContextCompat.getDrawable(context, poiCategoryIcon(category))
+                    ?.toBitmap(poiIconSizePx, poiIconSizePx)
+            }
+        }
         
         // POIs originate from the outer edge of the compass
         val minVisualRadius = arcR + (2f * pxPerDp)
@@ -187,13 +200,25 @@ fun CompassView(
                 setShadowLayer(3f, 0f, 0f, android.graphics.Color.BLACK)
             }
 
-            // POI dots — Allowed to go off-screen
+            // POI icons — Allowed to go off-screen
+            val iconPaint = android.graphics.Paint().apply { isAntiAlias = true }
+            val halfIcon = poiIconSizePx / 2f
             visiblePois.forEach { (pos, poi, distM) ->
-                val dotColor = poiCategoryColor(poi.category)
-                drawCircle(dotColor, radius = poiDotRadius, center = pos)
-                drawCircle(Color.Black, radius = poiDotRadius, center = pos, style = Stroke(width = 2f))
-                
-                // Draw distance text below the dot
+                val bitmap = categoryIcons[poi.category]
+                if (bitmap != null) {
+                    iconPaint.colorFilter = PorterDuffColorFilter(
+                        poiCategoryColor(poi.category).toArgb(),
+                        PorterDuff.Mode.SRC_IN
+                    )
+                    drawContext.canvas.nativeCanvas.drawBitmap(
+                        bitmap,
+                        pos.x - halfIcon,
+                        pos.y - halfIcon,
+                        iconPaint
+                    )
+                }
+
+                // Draw distance text below the icon
                 val distStr = if (distM >= 1000f) {
                     "%.1fkm".format(distM / 1000f)
                 } else {
@@ -202,7 +227,7 @@ fun CompassView(
                 drawContext.canvas.nativeCanvas.drawText(
                     distStr,
                     pos.x,
-                    pos.y + poiDotRadius + 12f * pxPerDp,
+                    pos.y + halfIcon + 12f * pxPerDp,
                     distancePaint
                 )
             }
@@ -212,7 +237,7 @@ fun CompassView(
 
 private fun Double.withRadians(): Double = Math.toRadians(this)
 
-private fun poiCategoryColor(category: PoiCategory): Color = when (category) {
+fun poiCategoryColor(category: PoiCategory): Color = when (category) {
     PoiCategory.FOOD_AND_DRINK          -> Color(0xFFFF9800)
     PoiCategory.ACCOMMODATION           -> Color(0xFF2196F3)
     PoiCategory.SIGHTSEEING_AND_CULTURE -> Color(0xFF9C27B0)
@@ -224,4 +249,19 @@ private fun poiCategoryColor(category: PoiCategory): Color = when (category) {
     PoiCategory.RETAIL_SHOPPING         -> Color(0xFFE91E63)
     PoiCategory.SERVICES                -> Color(0xFF795548)
     PoiCategory.OTHER                   -> Color(0xFFCFD8DC)
+}
+
+@DrawableRes
+fun poiCategoryIcon(category: PoiCategory): Int = when (category) {
+    PoiCategory.FOOD_AND_DRINK          -> R.drawable.food
+    PoiCategory.ACCOMMODATION           -> R.drawable.accommodation
+    PoiCategory.SIGHTSEEING_AND_CULTURE -> R.drawable.sightseeing
+    PoiCategory.LEISURE_AND_ACTIVITIES  -> R.drawable.leisure
+    PoiCategory.HEALTH                  -> R.drawable.health
+    PoiCategory.MONEY                   -> R.drawable.money
+    PoiCategory.TRANSPORT               -> R.drawable.transport
+    PoiCategory.GROCERY_AND_FOOD_SHOPS  -> R.drawable.grocery
+    PoiCategory.RETAIL_SHOPPING         -> R.drawable.retail
+    PoiCategory.SERVICES                -> R.drawable.services
+    PoiCategory.OTHER                   -> R.drawable.services
 }

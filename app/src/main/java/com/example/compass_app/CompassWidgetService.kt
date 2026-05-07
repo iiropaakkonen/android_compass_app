@@ -55,7 +55,6 @@ class CompassWidgetService : Service(), SensorEventListener {
             ComponentName(this, CompassWidget::class.java)
         )
 
-        // No widgets on screen — nothing to update.
         if (widgetIds.isEmpty()) return
 
         val bitmap = CompassWidgetRenderer.render(this, bitmapSize, bitmapSize, heading)
@@ -63,7 +62,6 @@ class CompassWidgetService : Service(), SensorEventListener {
         val views = RemoteViews(packageName, R.layout.widget_compass)
         views.setImageViewBitmap(R.id.widget_compass_image, bitmap)
 
-        // Tapping the widget opens the main app
         val launchIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this,

@@ -1,6 +1,7 @@
 package com.example.compass_app
 
 import android.location.Geocoder
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,14 +18,26 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+@Composable
+fun CategoryIcon(category: PoiCategory, modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(id = poiCategoryIcon(category)),
+        contentDescription = null,
+        modifier = modifier,
+        colorFilter = ColorFilter.tint(poiCategoryColor(category))
+    )
+}
 
 @Composable
 fun NearbyPOIScreen(
@@ -92,6 +105,11 @@ fun NearbyPOIScreen(
                                                 onCheckedChange = null
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
+                                            CategoryIcon(
+                                                category = category,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
                                             Text(category.displayName)
                                         }
                                     },
@@ -227,11 +245,18 @@ fun POI_Item(
                     }
                     Text(text = poi.name, style = MaterialTheme.typography.titleMedium)
                 }
-                Text(
-                    text = poi.category.displayName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CategoryIcon(
+                        category = poi.category,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = poi.category.displayName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             IconButton(onClick = onFavoriteClick) {
                 Text(
@@ -311,12 +336,21 @@ fun PoiInfoDialog(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                Text(
-                    text = poi.category.displayName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(bottom = 8.dp)
-                )
+                ) {
+                    CategoryIcon(
+                        category = poi.category,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = poi.category.displayName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
                 val uriHandler = LocalUriHandler.current
                 val infoFields = buildList {
@@ -431,6 +465,12 @@ fun AddCustomPoiDialog(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Category") },
+                        leadingIcon = {
+                            CategoryIcon(
+                                category = selectedCategory,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
                         trailingIcon = {
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded)
                         },
@@ -444,7 +484,16 @@ fun AddCustomPoiDialog(
                     ) {
                         PoiCategory.entries.forEach { category ->
                             DropdownMenuItem(
-                                text = { Text(category.displayName) },
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        CategoryIcon(
+                                            category = category,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(category.displayName)
+                                    }
+                                },
                                 onClick = {
                                     selectedCategory = category
                                     categoryExpanded = false

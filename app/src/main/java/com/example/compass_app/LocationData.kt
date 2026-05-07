@@ -27,17 +27,17 @@ data class PointOfInterest(
  * Enum for filtering POIs by category, mapped from the Python script logic.
  */
 enum class PoiCategory(val displayName: String) {
-    FOOD_AND_DRINK("🍽️ Food & Drink"),
-    ACCOMMODATION("🏨 Accommodation"),
-    SIGHTSEEING_AND_CULTURE("🏛️ Sightseeing & Culture"),
-    LEISURE_AND_ACTIVITIES("🎭 Leisure & Activities"),
-    HEALTH("🏥 Health"),
-    MONEY("💳 Money"),
-    TRANSPORT("🚌 Transport"),
-    GROCERY_AND_FOOD_SHOPS("🛒 Grocery & Food Shops"),
-    RETAIL_SHOPPING("🛍️ Retail Shopping"),
-    SERVICES("✂️ Services"),
-    OTHER("📍 Other")
+    FOOD_AND_DRINK("Food & Drink"),
+    ACCOMMODATION("Accommodation"),
+    SIGHTSEEING_AND_CULTURE("Sightseeing & Culture"),
+    LEISURE_AND_ACTIVITIES("Leisure & Activities"),
+    HEALTH("Health"),
+    MONEY("Money"),
+    TRANSPORT("Transport"),
+    GROCERY_AND_FOOD_SHOPS("Grocery & Food Shops"),
+    RETAIL_SHOPPING("Retail Shopping"),
+    SERVICES("Services"),
+    OTHER("Other")
 }
 
 // --- Overpass API Models ---
