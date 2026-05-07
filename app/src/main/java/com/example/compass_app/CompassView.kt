@@ -131,7 +131,7 @@ fun CompassView(
             }
 
             clipPath(compassPath) {
-                drawArc(
+                /*drawArc(
                     color = colorUsed,
                     startAngle = 180f,
                     sweepAngle = 180f,
@@ -139,7 +139,7 @@ fun CompassView(
                     topLeft = topLeft,
                     size = arcSize,
                     style = Fill
-                )
+                )*/
 
                 val tickPaint = android.graphics.Paint().apply {
                     color = android.graphics.Color.WHITE
