@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -108,6 +109,18 @@ fun MainAppContent(viewModel: NearbyViewModel, compassHeading: StateFlow<Float>)
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     var headerHeight by remember { mutableStateOf(280.dp) }
+
+    // Persist the current color scheme to SharedPreferences so widgets can pick it up.
+    val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
+    SideEffect {
+        ThemePrefs.save(
+            context = context,
+            backgroundColor = colorScheme.primaryContainer.toArgb(),
+            tickColor = android.graphics.Color.WHITE,
+            accentColor = colorScheme.primary.toArgb()
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         HeaderSection(modifier = Modifier.height(headerHeight), compassHeading = compassHeading, viewModel = viewModel)

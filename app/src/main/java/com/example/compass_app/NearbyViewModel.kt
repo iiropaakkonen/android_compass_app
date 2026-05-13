@@ -208,6 +208,9 @@ class   NearbyViewModel(application: Application) : AndroidViewModel(application
             customPois
         }
 
+        // Push updated data to widgets (nearest-first list is already sorted above)
+        WidgetDataStore.save(getApplication(), userLocation, pois)
+
         val cacheStats = tileCache.getStats()
         Log.d("TileCache", "  Loaded tiles: ${cacheStats.validTiles}")
         Log.d("TileCache", "  Display radius: 1.0km")

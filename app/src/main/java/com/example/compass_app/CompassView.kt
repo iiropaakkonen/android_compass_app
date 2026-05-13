@@ -237,6 +237,9 @@ fun CompassView(
 
 private fun Double.withRadians(): Double = Math.toRadians(this)
 
+/** Returns the ARGB int for a category — usable from non-Compose (widget renderer) code. */
+fun poiCategoryColorInt(category: PoiCategory): Int = poiCategoryColor(category).toArgb()
+
 fun poiCategoryColor(category: PoiCategory): Color = when (category) {
     PoiCategory.FOOD_AND_DRINK          -> Color(0xFFFF9800)
     PoiCategory.ACCOMMODATION           -> Color(0xFF2196F3)
