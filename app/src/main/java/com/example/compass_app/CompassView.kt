@@ -114,7 +114,7 @@ fun CompassView(
             val topLeft = Offset(cx - arcR, arcCenterY - arcR)
             val arcSize = androidx.compose.ui.geometry.Size(arcR * 2f, arcR * 2f)
 
-            // Clip to the semi-circle area for the compass body
+
             val compassPath = Path().apply {
                 addArc(
                     oval = androidx.compose.ui.geometry.Rect(
@@ -147,7 +147,7 @@ fun CompassView(
                 }
 
                 for (deg in 0..360 step 2) {
-                    val canvasAngle = (180 - deg).toDouble().withRadians()
+                    val canvasAngle = (180 - deg - heading).toDouble().withRadians()
                     val isMajor = deg % 90 == 0
                     val isMedium = deg % 45 == 0
                     val isMinor = deg % 10 == 0
@@ -174,18 +174,24 @@ fun CompassView(
                     drawContext.canvas.nativeCanvas.drawLine(outerX, outerY, innerX, innerY, tickPaint)
                 }
 
-                val directions = mapOf("N" to 0f, "E" to 90f, "S" to 180f, "W" to 270f)
+                val cardinals = mapOf("N" to 0f, "E" to 90f, "S" to 180f, "W" to 270f)
+                val intercardinals = mapOf("NE" to 45f, "SE" to 135f, "SW" to 225f, "NW" to 315f)
+
                 val labelRadius = arcR * 0.75f
                 val labelPaint = android.graphics.Paint().apply {
-                    textSize = arcR * 0.15f
                     textAlign = android.graphics.Paint.Align.CENTER
                     isAntiAlias = true
                     typeface = android.graphics.Typeface.DEFAULT_BOLD
                 }
-                directions.forEach { (label, angle) ->
+
+                (cardinals + intercardinals).forEach { (label, angle) ->
                     val canvasAngle = (angle - heading - 90f).toDouble().withRadians()
                     val lx = cx + labelRadius * cos(canvasAngle).toFloat()
                     val ly = arcCenterY + labelRadius * sin(canvasAngle).toFloat()
+                    labelPaint.textSize = when (label.length) {
+                        1 -> arcR * 0.15f   // N, E, S, W
+                        else -> arcR * 0.09f // NE, SE, SW, NW
+                    }
                     labelPaint.color = if (label == "N") android.graphics.Color.RED else android.graphics.Color.WHITE
                     drawContext.canvas.nativeCanvas.drawText(label, lx, ly, labelPaint)
                 }
@@ -218,7 +224,7 @@ fun CompassView(
                     )
                 }
 
-                // Draw distance text below the icon
+
                 val distStr = if (distM >= 1000f) {
                     "%.1fkm".format(distM / 1000f)
                 } else {

@@ -18,6 +18,8 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.graphics.Color
@@ -147,21 +149,56 @@ fun MainAppContent(viewModel: NearbyViewModel, compassHeading: StateFlow<Float>)
 @Composable
 fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float>, viewModel: NearbyViewModel) {
     val compassNorth by compassHeading.collectAsState()
+    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+    val secondaryContainer = MaterialTheme.colorScheme.secondaryContainer
 
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer,
         modifier = modifier.fillMaxWidth(),
     ) {
-        Column(
-            modifier = Modifier.padding(vertical = 8.dp).fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Explore Nearby",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(horizontal = 16.dp)
+        Box {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                primaryContainer,
+                                secondaryContainer,
+                            )
+                        )
+                    )
             )
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val dotColor = Color.White.copy(alpha = 0.08f)
+                val spacing = 24.dp.toPx()
+                var x = 0f
+                while (x < size.width) {
+                    var y = 0f
+                    while (y < size.height) {
+                        drawCircle(
+                            color = dotColor,
+                            radius = 2.dp.toPx(),
+                            center = Offset(x, y)
+                        )
+                        y += spacing
+                    }
+                    x += spacing
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .padding(vertical = 8.dp)
+                    .fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Explore Nearby",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -181,22 +218,25 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
                     .aspectRatio(2.5f)
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "${viewModel.maxCompassDistanceM.toInt()}m",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.width(48.dp)
-                )
-                Slider(
-                    value = viewModel.maxCompassDistanceM,
-                    onValueChange = { viewModel.maxCompassDistanceM = it },
-                    valueRange = 100f..1000f,
-                    modifier = Modifier.weight(1f)
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${viewModel.maxCompassDistanceM.toInt()}m",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.width(48.dp)
+                    )
+                    Slider(
+                        value = viewModel.maxCompassDistanceM,
+                        onValueChange = { viewModel.maxCompassDistanceM = it },
+                        valueRange = 100f..1000f,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
     }
