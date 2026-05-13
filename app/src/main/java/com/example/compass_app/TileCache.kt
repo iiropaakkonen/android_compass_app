@@ -115,6 +115,15 @@ class TileCache(
 
 
     @Synchronized
+    fun restoreFrom(tiles: Map<String, CachedTile>) {
+        val now = System.currentTimeMillis()
+        tiles.forEach { (key, tile) -> cache[key] = tile.copy(fetchedAt = now) }
+    }
+
+    @Synchronized
+    fun snapshot(): Map<String, CachedTile> = cache.toMap()
+
+    @Synchronized
     fun getStats(): CacheStats {
         val now = System.currentTimeMillis()
         val validTiles = cache.values.count { !it.isExpired(ttlMillis) }

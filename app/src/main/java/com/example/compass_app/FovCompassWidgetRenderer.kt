@@ -5,6 +5,8 @@ import android.content.res.Configuration
 import android.graphics.*
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
+import android.graphics.LinearGradient
+import android.graphics.Shader
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import kotlin.math.abs
@@ -80,9 +82,10 @@ object FovCompassWidgetRenderer {
         val isDark = (context.resources.configuration.uiMode and
                 Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 
-        val bgColor     = ThemePrefs.getBackground(context, isDark)
-        val tickColor   = ThemePrefs.getTick(context)
-        val accentColor = ThemePrefs.getAccent(context, isDark)
+        val bgColor          = ThemePrefs.getBackground(context, isDark)
+        val secondaryBgColor = ThemePrefs.getSecondaryBackground(context, isDark)
+        val tickColor        = ThemePrefs.getTick(context)
+        val accentColor      = ThemePrefs.getAccent(context, isDark)
 
         // Reuse or (re)allocate the output bitmap
         val bitmap = if (outputBitmap != null && outputWidth == widthPx && outputHeight == heightPx) {
@@ -108,9 +111,36 @@ object FovCompassWidgetRenderer {
         canvas.drawRoundRect(
             0f, stripTop, widthPx.toFloat(), heightPx.toFloat(), cornerR, cornerR,
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = withAlpha(bgColor, 245); style = Paint.Style.FILL
+                shader = LinearGradient(
+                    0f, stripTop, 0f, heightPx.toFloat(),
+                    intArrayOf(withAlpha(bgColor, 245), withAlpha(secondaryBgColor, 245)),
+                    null,
+                    Shader.TileMode.CLAMP
+                )
+                style = Paint.Style.FILL
             }
         )
+
+        // Dot pattern clipped to the strip
+        val density    = context.resources.displayMetrics.density
+        val dotRadius  = 2f * density
+        val dotSpacing = 24f * density
+        val dotPaint   = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x14FFFFFF }
+        canvas.save()
+        canvas.clipPath(Path().apply {
+            addRoundRect(RectF(0f, stripTop, widthPx.toFloat(), heightPx.toFloat()), cornerR, cornerR, Path.Direction.CW)
+        })
+        var dx = 0f
+        while (dx < widthPx) {
+            var dy = stripTop
+            while (dy < heightPx) {
+                canvas.drawCircle(dx, dy, dotRadius, dotPaint)
+                dy += dotSpacing
+            }
+            dx += dotSpacing
+        }
+        canvas.restore()
+
         canvas.drawRoundRect(
             0.75f, stripTop + 0.75f, widthPx - 0.75f, heightPx - 0.75f, cornerR, cornerR,
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -173,14 +203,11 @@ object FovCompassWidgetRenderer {
         // ── POI icons — drawn in the strip, in front of ticks/labels ─────────
         val (userLoc, allPois) = getOrRefreshPois(context)
         if (userLoc != null) {
-            val maxDistM    = 1000f
-            // Icons are centred vertically in the strip
-            val iconCenterY = stripTop + stripH * 0.50f
-            // Base size fills ~45 % of strip height; RectF handles per-marker scaling
-            val baseIconPx  = (stripH * 0.45f).toInt().coerceIn(24, 60)
+            val maxDistM     = 1000f
+            val iconCenterY  = stripTop + stripH * 0.50f
+            val baseIconPx   = (stripH * 0.56f).toInt().coerceIn(28, 70)
             val baseIconHalf = baseIconPx / 2f
-            // Edge markers are slightly smaller so they don't obscure the border
-            val edgeIconPx  = (baseIconPx * 0.72f).toInt().coerceIn(16, 44)
+            val edgeIconPx   = (baseIconPx * 0.72f).toInt().coerceIn(18, 50)
             val edgeIconHalf = edgeIconPx / 2f
 
             val icons     = getIconBitmaps(context, baseIconPx)
@@ -206,13 +233,10 @@ object FovCompassWidgetRenderer {
                 }
             }
 
-            // Farthest first → closest rendered on top
             inFov.sortByDescending { it.distM }
-            // Edge: sort by proximity to FOV boundary (smallest |diff| = most likely to re-enter)
             leftEdge.sortBy  { abs(it.diff) }
             rightEdge.sortBy { abs(it.diff) }
 
-            // Distance text paint — small, used below in-FOV icons
             val distPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 textSize  = (stripH * 0.14f).coerceAtLeast(7f)
                 textAlign = Paint.Align.CENTER
@@ -220,33 +244,62 @@ object FovCompassWidgetRenderer {
                 setShadowLayer(2f, 0f, 0f, Color.BLACK)
             }
 
-            // In-FOV icons
-            for ((poi, diff, distM) in inFov) {
+            data class InFovRender(
+                val poi: WidgetPoi,
+                val x: Float,
+                val drawHalf: Float,
+                val alpha: Int,
+                val distM: Float,
+                val distStr: String,
+                val textY: Float
+            )
+
+            // Collect renderable in-FOV items (already farthest-first)
+            val renderItems = inFov.mapNotNull { (poi, diff, distM) ->
                 val normalizedDist = (distM / maxDistM).coerceIn(0f, 1f)
                 val drawSize = (baseIconPx * (1f - normalizedDist * 0.50f)).coerceAtLeast(8f)
                 val drawHalf = drawSize / 2f
                 val alpha    = (255 * (1f - normalizedDist * 0.60f)).toInt().coerceIn(80, 255)
-
                 val x = cx + diff * pixelsPerDegree
-                if (x - drawHalf < 0f || x + drawHalf > widthPx) continue
+                if (x - drawHalf < 0f || x + drawHalf > widthPx) return@mapNotNull null
+                val textY = iconCenterY + drawHalf + distPaint.textSize + 1f
+                if (textY >= heightPx - 2f) return@mapNotNull null
+                val distStr = if (distM >= 1000f) "%.1fkm".format(distM / 1000f) else "${distM.toInt()}m"
+                InFovRender(poi, x, drawHalf, alpha, distM, distStr, textY)
+            }
 
-                val icon = icons[poi.toCategory()] ?: continue
-                iconPaint.alpha       = alpha
+            // Claim text slots: custom markers first, then closest-first
+            val claimedX = mutableListOf<Pair<Float, Float>>()
+            val showText = mutableSetOf<Int>()
+            val textPad  = 4f
+
+            val priorityOrder = renderItems.indices
+                .sortedWith(compareByDescending<Int> { renderItems[it].poi.isCustom }.thenBy { renderItems[it].distM })
+
+            for (idx in priorityOrder) {
+                val r  = renderItems[idx]
+                val hw = distPaint.measureText(r.distStr) / 2f + textPad
+                if (claimedX.none { (cl, cr) -> r.x - hw < cr && r.x + hw > cl }) {
+                    showText.add(idx)
+                    claimedX.add((r.x - hw) to (r.x + hw))
+                }
+            }
+
+            // Draw icons; text only where permitted
+            for ((i, r) in renderItems.withIndex()) {
+                val icon = icons[r.poi.toCategory()] ?: continue
+                iconPaint.alpha       = r.alpha
                 iconPaint.colorFilter = PorterDuffColorFilter(
-                    poiCategoryColorInt(poi.toCategory()), PorterDuff.Mode.SRC_IN
+                    poiCategoryColorInt(r.poi.toCategory()), PorterDuff.Mode.SRC_IN
                 )
                 canvas.drawBitmap(
                     icon, null,
-                    RectF(x - drawHalf, iconCenterY - drawHalf, x + drawHalf, iconCenterY + drawHalf),
+                    RectF(r.x - r.drawHalf, iconCenterY - r.drawHalf, r.x + r.drawHalf, iconCenterY + r.drawHalf),
                     iconPaint
                 )
-
-                // Small distance label below the icon (draw only if it fits in the strip)
-                val textY = iconCenterY + drawHalf + distPaint.textSize + 1f
-                if (textY < heightPx - 2f) {
-                    val distStr = if (distM >= 1000f) "%.1fkm".format(distM / 1000f) else "${distM.toInt()}m"
-                    distPaint.alpha = (alpha * 0.85f).toInt()
-                    canvas.drawText(distStr, x, textY, distPaint)
+                if (i in showText) {
+                    distPaint.alpha = (r.alpha * 0.85f).toInt()
+                    canvas.drawText(r.distStr, r.x, r.textY, distPaint)
                 }
             }
 

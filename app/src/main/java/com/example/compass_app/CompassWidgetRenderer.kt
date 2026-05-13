@@ -9,6 +9,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import kotlin.math.cos
 import kotlin.math.sin
+import android.graphics.LinearGradient
+import android.graphics.Shader
 
 /**
  * Renders a bitmap that visually matches the semi-circular CompassView.
@@ -66,8 +68,9 @@ object CompassWidgetRenderer {
         val isDark = (context.resources.configuration.uiMode and
                 Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 
-        val bgColor   = ThemePrefs.getBackground(context, isDark)
-        val tickColor = ThemePrefs.getTick(context)
+        val bgColor          = ThemePrefs.getBackground(context, isDark)
+        val secondaryBgColor = ThemePrefs.getSecondaryBackground(context, isDark)
+        val tickColor        = ThemePrefs.getTick(context)
 
         // Reuse or (re)allocate the output bitmap
         val result = if (outputBitmap != null && outputWidth == widthPx && outputHeight == heightPx) {
@@ -80,7 +83,33 @@ object CompassWidgetRenderer {
             }
         }
         val canvas = Canvas(result)
-        canvas.drawColor(bgColor)
+
+        // Gradient background (top = primaryContainer, bottom = secondaryContainer)
+        canvas.drawRect(
+            0f, 0f, widthPx.toFloat(), heightPx.toFloat(),
+            Paint().apply {
+                shader = LinearGradient(
+                    0f, 0f, 0f, heightPx.toFloat(),
+                    bgColor, secondaryBgColor,
+                    Shader.TileMode.CLAMP
+                )
+            }
+        )
+
+        // Subtle dot pattern overlay matching the app header
+        val density   = context.resources.displayMetrics.density
+        val dotRadius = 2f * density
+        val dotSpacing = 24f * density
+        val dotPaint  = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x14FFFFFF }
+        var dx = 0f
+        while (dx < widthPx) {
+            var dy = 0f
+            while (dy < heightPx) {
+                canvas.drawCircle(dx, dy, dotRadius, dotPaint)
+                dy += dotSpacing
+            }
+            dx += dotSpacing
+        }
 
         val cx         = widthPx / 2f
         val arcCenterY = heightPx.toFloat()   // arc base at bitmap bottom, same as CompassView
@@ -146,12 +175,11 @@ object CompassWidgetRenderer {
         val (userLoc, widgetPois) = getOrRefreshPois(context)
         if (userLoc == null || widgetPois.isEmpty()) return result
 
-        val maxDistM      = 1000f
-        val baseIconPx    = (arcR * 0.22f).toInt().coerceIn(12, 24)
-        val baseIconHalf  = baseIconPx / 2f
-        val icons         = getIconBitmaps(context, baseIconPx)
+        val maxDistM     = 1000f
+        val baseIconPx   = (arcR * 0.28f).toInt().coerceIn(16, 32)
+        val baseIconHalf = baseIconPx / 2f
+        val icons        = getIconBitmaps(context, baseIconPx)
 
-        // Radius range: icons start just past the arc rim, end near the bitmap top
         val minVisualRadius = arcR + baseIconHalf + 4f
         val maxVisualRadius = arcCenterY - baseIconHalf - 6f
 
@@ -163,50 +191,72 @@ object CompassWidgetRenderer {
             setShadowLayer(2f, 0f, 0f, Color.BLACK)
         }
 
-        // Draw farthest first so closest markers render on top
-        val sorted = widgetPois
+        data class PoiRenderInfo(
+            val poi: WidgetPoi,
+            val lx: Float, val ly: Float,
+            val drawHalf: Float,
+            val alpha: Int,
+            val distM: Float,
+            val distStr: String
+        )
+
+        // Collect all visible POIs with computed positions, farthest-first for draw order
+        val renderList = widgetPois
             .mapNotNull { poi ->
                 val d = distanceTo(userLoc, Location(poi.lat, poi.lon)) * 1000f
-                if (d > maxDistM) null else poi to d
+                if (d > maxDistM) return@mapNotNull null
+                val normalizedDist = (d / maxDistM).coerceIn(0f, 1f)
+                val poiRadius = minVisualRadius + (maxVisualRadius - minVisualRadius) * normalizedDist
+                val bearing = bearingToFloat(userLoc, Location(poi.lat, poi.lon))
+                val rad = Math.toRadians((bearing - heading - 90.0))
+                val lx = cx + poiRadius * cos(rad).toFloat()
+                val ly = arcCenterY + poiRadius * sin(rad).toFloat()
+                if (ly + baseIconHalf >= arcCenterY) return@mapNotNull null
+                if (ly - baseIconHalf < 0f)          return@mapNotNull null
+                if (lx - baseIconHalf < 0f || lx + baseIconHalf > widthPx) return@mapNotNull null
+                val drawSize = (baseIconPx * (1f - normalizedDist * 0.50f)).coerceAtLeast(5f)
+                val alpha    = (255 * (1f - normalizedDist * 0.60f)).toInt().coerceIn(80, 255)
+                val distStr  = if (d >= 1000f) "%.1fkm".format(d / 1000f) else "${d.toInt()}m"
+                PoiRenderInfo(poi, lx, ly, drawSize / 2f, alpha, d, distStr)
             }
-            .sortedByDescending { it.second }
+            .sortedByDescending { it.distM }
 
-        for ((poi, distM) in sorted) {
-            val normalizedDist = (distM / maxDistM).coerceIn(0f, 1f)
+        // Claim text slots: custom markers first, then closest-first. Overlapping labels are hidden.
+        val claimedRects = mutableListOf<RectF>()
+        val showText     = mutableSetOf<Int>()
+        val textPad      = 4f
 
-            // Radius scales with distance (close → just above arc, far → near top)
-            val poiRadius = minVisualRadius + (maxVisualRadius - minVisualRadius) * normalizedDist
+        val priorityOrder = renderList.indices
+            .sortedWith(compareByDescending<Int> { renderList[it].poi.isCustom }.thenBy { renderList[it].distM })
 
-            val bearing = bearingToFloat(userLoc, Location(poi.lat, poi.lon))
-            val rad = Math.toRadians((bearing - heading - 90.0))
-            val lx  = cx + poiRadius * cos(rad).toFloat()
-            val ly  = arcCenterY + poiRadius * sin(rad).toFloat()
+        for (idx in priorityOrder) {
+            val info  = renderList[idx]
+            val hw    = distPaint.measureText(info.distStr) / 2f + textPad
+            val textY = info.ly - info.drawHalf - 2f
+            val rect  = RectF(info.lx - hw, textY - distPaint.textSize - textPad, info.lx + hw, textY + textPad)
+            if (claimedRects.none { RectF.intersects(it, rect) }) {
+                showText.add(idx)
+                claimedRects.add(rect)
+            }
+        }
 
-            // Skip if behind user, off the top, or off the sides
-            if (ly + baseIconHalf >= arcCenterY) continue
-            if (ly - baseIconHalf < 0f)          continue
-            if (lx - baseIconHalf < 0f || lx + baseIconHalf > widthPx) continue
-
-            // Size and alpha decrease with distance
-            val drawSize = (baseIconPx * (1f - normalizedDist * 0.50f)).coerceAtLeast(5f)
-            val drawHalf = drawSize / 2f
-            val alpha    = (255 * (1f - normalizedDist * 0.60f)).toInt().coerceIn(80, 255)
-
-            val icon = icons[poi.toCategory()] ?: continue
-            iconPaint.alpha       = alpha
+        // Draw icons farthest-first; text only for slots that won the overlap check
+        renderList.forEachIndexed { i, info ->
+            val icon = icons[info.poi.toCategory()] ?: return@forEachIndexed
+            iconPaint.alpha       = info.alpha
             iconPaint.colorFilter = PorterDuffColorFilter(
-                poiCategoryColorInt(poi.toCategory()), PorterDuff.Mode.SRC_IN
+                poiCategoryColorInt(info.poi.toCategory()), PorterDuff.Mode.SRC_IN
             )
             canvas.drawBitmap(
                 icon, null,
-                RectF(lx - drawHalf, ly - drawHalf, lx + drawHalf, ly + drawHalf),
+                RectF(info.lx - info.drawHalf, info.ly - info.drawHalf,
+                      info.lx + info.drawHalf, info.ly + info.drawHalf),
                 iconPaint
             )
-
-            // Distance label above the icon (toward the top = clear space)
-            val distStr = if (distM >= 1000f) "%.1fkm".format(distM / 1000f) else "${distM.toInt()}m"
-            distPaint.alpha = alpha
-            canvas.drawText(distStr, lx, ly - drawHalf - 2f, distPaint)
+            if (i in showText) {
+                distPaint.alpha = info.alpha
+                canvas.drawText(info.distStr, info.lx, info.ly - info.drawHalf - 2f, distPaint)
+            }
         }
 
         return result

@@ -64,6 +64,18 @@ class   NearbyViewModel(application: Application) : AndroidViewModel(application
         favorites = poiStorage.getFavoriteIds()
         customPois = poiStorage.getCustomPois()
         pois = customPois
+
+        val absenceExpired = TileCacheStore.recordAppOpen(getApplication())
+        if (absenceExpired) {
+            TileCacheStore.clear(getApplication())
+            Log.d("TileCache", "🕐 Persistent cache cleared: app absent >3 hours")
+        } else {
+            val persisted = TileCacheStore.load(getApplication())
+            if (persisted.isNotEmpty()) {
+                tileCache.restoreFrom(persisted)
+                Log.d("TileCache", "💾 Restored ${persisted.size} tile(s) from disk")
+            }
+        }
     }
 
     fun toggleFavorite(poi: PointOfInterest) {
@@ -169,6 +181,7 @@ class   NearbyViewModel(application: Application) : AndroidViewModel(application
                 val duration = System.currentTimeMillis() - startTime
 
                 tileCache.put(tile, fetchedPois)
+                TileCacheStore.save(getApplication(), tileCache.snapshot())
 
                 Log.d("TileCache", "✓ API CALL COMPLETED in ${duration}ms")
                 Log.d("TileCache", "  → Received ${fetchedPois.size} POIs")
@@ -228,6 +241,7 @@ class   NearbyViewModel(application: Application) : AndroidViewModel(application
         Log.d("TileCache", "  Cache before clear: ${statsBefore.validTiles} tiles, ${statsBefore.totalPois} POIs")
 
         tileCache.clear()
+        TileCacheStore.clear(getApplication())
 
         Log.d("TileCache", "  ✓ Cache cleared, forcing API call")
         Log.d("TileCache", "═══════════════════════════════════════")

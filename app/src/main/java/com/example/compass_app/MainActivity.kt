@@ -119,6 +119,7 @@ fun MainAppContent(viewModel: NearbyViewModel, compassHeading: StateFlow<Float>)
         ThemePrefs.save(
             context = context,
             backgroundColor = colorScheme.primaryContainer.toArgb(),
+            secondaryBackgroundColor = colorScheme.secondaryContainer.toArgb(),
             tickColor = android.graphics.Color.WHITE,
             accentColor = colorScheme.primary.toArgb()
         )
