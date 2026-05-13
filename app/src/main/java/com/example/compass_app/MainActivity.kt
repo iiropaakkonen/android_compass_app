@@ -242,11 +242,12 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
                     }
                     Text(
                         text = "Explore Nearby",
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
+
 
                 Spacer(modifier = Modifier.weight(1f))
 
@@ -268,7 +269,7 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
 
                 Text(
                     text = "${viewModel.maxCompassDistanceM.toInt()}m",
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -308,5 +309,4 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
             }
         }
     }
-}
 }
