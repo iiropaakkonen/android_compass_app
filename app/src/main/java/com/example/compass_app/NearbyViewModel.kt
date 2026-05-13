@@ -46,6 +46,11 @@ class   NearbyViewModel(application: Application) : AndroidViewModel(application
         compassLocked = !compassLocked
     }
 
+    fun adjustLockedHeading(deltaDegrees: Float) {
+        if (!compassLocked) return
+        lockedHeading = ((lockedHeading + deltaDegrees) % 360f + 360f) % 360f
+    }
+
     var activeFilters by mutableStateOf(PoiCategory.entries.toSet())
     var showFavoritesOnly by mutableStateOf(false)
 

@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -151,10 +152,21 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
     val compassNorth by compassHeading.collectAsState()
     val primaryContainer = MaterialTheme.colorScheme.primaryContainer
     val secondaryContainer = MaterialTheme.colorScheme.secondaryContainer
+    val effectiveHeading = if (viewModel.compassLocked) viewModel.lockedHeading else compassNorth
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
+
+    val headerDragModifier = if (viewModel.compassLocked) {
+        Modifier.pointerInput(viewModel.compassLocked) {
+            detectDragGestures { change, dragAmount ->
+                change.consume()
+                viewModel.adjustLockedHeading(dragAmount.x / density * 0.3f)
+            }
+        }
+    } else Modifier
 
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().then(headerDragModifier),
     ) {
         Box {
             Box(
@@ -203,7 +215,7 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
             Spacer(modifier = Modifier.weight(1f))
 
             CompassView(
-                heading = compassNorth,
+                heading = effectiveHeading,
                 pois = viewModel.pois.filter { poi ->
                     val categoryMatch = poi.category in viewModel.activeFilters
                     val favoriteMatch = poi.id in viewModel.favorites
@@ -218,24 +230,43 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
                     .aspectRatio(2.5f)
             )
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            Text(
+                text = "${viewModel.maxCompassDistanceM.toInt()}m",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+
+            // Weights 1 : 6 : 1 = 12.5% : 75% : 12.5%, matching the compass arc margins.
+            // Slider occupies the full compass width; lock button sits in the right margin.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Spacer(modifier = Modifier.weight(1f))
+                Slider(
+                    value = viewModel.maxCompassDistanceM,
+                    onValueChange = { viewModel.maxCompassDistanceM = it },
+                    valueRange = 100f..1000f,
+                    modifier = Modifier.weight(6f)
+                )
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "${viewModel.maxCompassDistanceM.toInt()}m",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.width(48.dp)
-                    )
-                    Slider(
-                        value = viewModel.maxCompassDistanceM,
-                        onValueChange = { viewModel.maxCompassDistanceM = it },
-                        valueRange = 100f..1000f,
-                        modifier = Modifier.weight(1f)
-                    )
+                    IconButton(onClick = { viewModel.toggleCompassLock(compassNorth) }) {
+                        Icon(
+                            painter = painterResource(
+                                if (viewModel.compassLocked) R.drawable.lock_closed
+                                else R.drawable.lock_open
+                            ),
+                            contentDescription = if (viewModel.compassLocked) "Unlock orientation" else "Lock orientation",
+                            tint = if (viewModel.compassLocked)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
                 }
             }
         }
