@@ -9,7 +9,7 @@ import android.content.Intent
 class CompassWidget : AppWidgetProvider() {
 
     override fun onEnabled(context: Context) {
-        context.startService(Intent(context, CompassWidgetService::class.java))
+        context.startForegroundService(Intent(context, CompassWidgetService::class.java))
     }
 
     override fun onDisabled(context: Context) {
@@ -22,6 +22,6 @@ class CompassWidget : AppWidgetProvider() {
         appWidgetIds: IntArray
     ) {
         // Ensure the service is running after a reboot or if Android killed it.
-        context.startService(Intent(context, CompassWidgetService::class.java))
+        context.startForegroundService(Intent(context, CompassWidgetService::class.java))
     }
 }

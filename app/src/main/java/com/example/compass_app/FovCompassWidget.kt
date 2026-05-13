@@ -8,7 +8,7 @@ import android.content.Intent
 class FovCompassWidget : AppWidgetProvider() {
 
     override fun onEnabled(context: Context) {
-        context.startService(Intent(context, FovCompassWidgetService::class.java))
+        context.startForegroundService(Intent(context, FovCompassWidgetService::class.java))
     }
 
     override fun onDisabled(context: Context) {
@@ -20,6 +20,6 @@ class FovCompassWidget : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        context.startService(Intent(context, FovCompassWidgetService::class.java))
+        context.startForegroundService(Intent(context, FovCompassWidgetService::class.java))
     }
 }
