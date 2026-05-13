@@ -272,3 +272,4 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
         }
     }
 }
+}
