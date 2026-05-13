@@ -47,7 +47,8 @@ fun NearbyPOIScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var filterMenuExpanded by remember { mutableStateOf(false) }
     val allCategories = PoiCategory.entries
-    val allSelected = viewModel.activeFilters.size == allCategories.size
+    val allSelected = viewModel.activeFilters.containsAll(allCategories)
+    val filterActive = viewModel.showFavoritesOnly || !allSelected
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -64,7 +65,7 @@ fun NearbyPOIScreen(
                     Box {
                         OutlinedButton(
                             onClick = { filterMenuExpanded = true },
-                            colors = if (!allSelected)
+                            colors = if (filterActive)
                                 ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                             else
                                 ButtonDefaults.outlinedButtonColors()
@@ -75,6 +76,20 @@ fun NearbyPOIScreen(
                             expanded = filterMenuExpanded,
                             onDismissRequest = { filterMenuExpanded = false }
                         ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Checkbox(
+                                            checked = viewModel.showFavoritesOnly,
+                                            onCheckedChange = null
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("★  Favourites", fontWeight = FontWeight.Bold)
+                                    }
+                                },
+                                onClick = { viewModel.showFavoritesOnly = !viewModel.showFavoritesOnly }
+                            )
+                            HorizontalDivider()
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -90,7 +105,7 @@ fun NearbyPOIScreen(
                                     }
                                 },
                                 onClick = {
-                                    viewModel.activeFilters = if (allSelected) setOf(allCategories.first())
+                                    viewModel.activeFilters = if (allSelected) emptySet()
                                     else allCategories.toSet()
                                 }
                             )
@@ -124,7 +139,15 @@ fun NearbyPOIScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+
+            if (viewModel.isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            } else {
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             if (viewModel.isLoading && viewModel.pois.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -143,15 +166,18 @@ fun NearbyPOIScreen(
                         }
                     }
                     else -> {
+                        val filteredPois = viewModel.pois.filter { poi ->
+                            val categoryMatch = poi.category in viewModel.activeFilters
+                            val favoriteMatch = poi.id in viewModel.favorites
+                            if (viewModel.showFavoritesOnly) favoriteMatch && categoryMatch
+                            else categoryMatch
+                        }
                         val sortedPois = if (userLoc != null) {
-                            viewModel.pois
-                                .filter { it.category in viewModel.activeFilters }
+                            filteredPois
                                 .map { it to distanceTo(userLoc, it.location) }
                                 .sortedBy { it.second }
                         } else {
-                            viewModel.pois
-                                .filter { it.category in viewModel.activeFilters }
-                                .map { it to null }
+                            filteredPois.map { it to null }
                         }
 
                         if (sortedPois.isEmpty() && !viewModel.isLoading) {
@@ -228,35 +254,29 @@ fun POI_Item(
         color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 1.dp)
             .clickable { onClick() }
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (isCustom) {
-                        Text(
-                            text = "📍 ",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
-                    Text(text = poi.name, style = MaterialTheme.typography.titleMedium)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    CategoryIcon(
-                        category = poi.category,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
+            CategoryIcon(
+                category = poi.category,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (isCustom) {
                     Text(
-                        text = poi.category.displayName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "📍 ",
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
+                Text(text = poi.name, style = MaterialTheme.typography.bodyMedium)
             }
             IconButton(onClick = onFavoriteClick) {
                 Text(
@@ -266,20 +286,13 @@ fun POI_Item(
                             else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Column(horizontalAlignment = Alignment.End) {
-                DistanceDisplay(result = distance)
-                Text(
-                    text = bearing,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }
+            DistanceDisplay(result = distance, modifier = Modifier.width(56.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
     }
 }
 
 @Composable
-fun DistanceDisplay(result: Float?, modifier: Modifier = Modifier) {
+fun DistanceDisplay(result: Float?, modifier: Modifier = Modifier, textAlign: androidx.compose.ui.text.style.TextAlign? = null) {
     val text = when {
         result == null -> "--"
         result >= 1.0f -> "${"%.2f".format(result)} km"
@@ -289,6 +302,7 @@ fun DistanceDisplay(result: Float?, modifier: Modifier = Modifier) {
         text = text,
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.primary,
+        textAlign = textAlign,
         modifier = modifier
     )
 }

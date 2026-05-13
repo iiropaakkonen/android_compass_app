@@ -47,14 +47,11 @@ class   NearbyViewModel(application: Application) : AndroidViewModel(application
     }
 
     var activeFilters by mutableStateOf(PoiCategory.entries.toSet())
+    var showFavoritesOnly by mutableStateOf(false)
 
     fun toggleFilter(category: PoiCategory) {
-        activeFilters = if (activeFilters.contains(category)) {
-            if (activeFilters.size == 1) activeFilters // keep at least one selected
-            else activeFilters - category
-        } else {
-            activeFilters + category
-        }
+        activeFilters = if (activeFilters.contains(category)) activeFilters - category
+        else activeFilters + category
     }
 
     // Tile-based caching
@@ -193,7 +190,9 @@ class   NearbyViewModel(application: Application) : AndroidViewModel(application
     private fun updatePoisFromCache() {
         val currentLoc = userLocation
         val cachedPois = if (currentLoc != null) {
-            tileCache.getAllPois().filter { distanceTo(currentLoc, it.location) <= 1.0f }
+            tileCache.getAllPois().filter {
+                distanceTo(currentLoc, it.location) <= 1.0f || it.id in favorites
+            }
         } else {
             emptyList()
         }
