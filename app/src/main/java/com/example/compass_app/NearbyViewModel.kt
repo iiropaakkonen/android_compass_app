@@ -51,6 +51,16 @@ class   NearbyViewModel(application: Application) : AndroidViewModel(application
         lockedHeading = ((lockedHeading + deltaDegrees) % 360f + 360f) % 360f
     }
 
+    private val appSettings = AppSettings(application)
+
+    var invertDragDirection by mutableStateOf(appSettings.invertDragDirection)
+        private set
+
+    fun toggleInvertDragDirection() {
+        invertDragDirection = !invertDragDirection
+        appSettings.invertDragDirection = invertDragDirection
+    }
+
     var activeFilters by mutableStateOf(PoiCategory.entries.toSet())
     var showFavoritesOnly by mutableStateOf(false)
 
