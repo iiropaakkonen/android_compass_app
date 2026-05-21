@@ -68,14 +68,60 @@ fun CompassView(
         // Using a multiplier to push them way out
         val maxVisualRadius = heightPx * 3.0f 
 
-        val visiblePois = remember(heading, pois, userLocation, maxDistanceM, widthPx, heightPx, arcR, deduplicateOverlaps) {
-            if (userLocation == null) return@remember emptyList()
+        // ── Step 1: heading-independent selection ────────────────────────────────
+        // Project every POI onto the compass using a fixed north-up reference
+        // (heading = 0) so the accepted set never changes as the user rotates.
+        // Only the POIs list, distance limit, and screen geometry are keys here.
+        val acceptedPoiIds: Set<Long>? = remember(
+            pois, userLocation, maxDistanceM, deduplicateOverlaps,
+            poiIconSizePx, cx, arcCenterY, minVisualRadius, maxVisualRadius
+        ) {
+            if (!deduplicateOverlaps || userLocation == null) return@remember null
 
-            val all = pois.mapNotNull { poi ->
+            // Compute fixed-reference positions (heading = 0 / north-up)
+            val candidates = pois.mapNotNull { poi ->
                 val distKm = distanceTo(userLocation, poi.location)
                 val distM = distKm * 1000f
                 if (distM > maxDistanceM) return@mapNotNull null
+                val bearing = bearingToFloat(userLocation, poi.location)
+                val angle = (bearing - 90.0).withRadians() // fixed heading = 0
+                val normalizedDist = (distM / maxDistanceM).coerceIn(0f, 1f)
+                val r = minVisualRadius + (maxVisualRadius - minVisualRadius) * normalizedDist
+                val x = cx + r * cos(angle).toFloat()
+                val y = arcCenterY + r * sin(angle).toFloat()
+                Triple(Offset(x, y), poi, distM)
+            } // pois is already sorted nearest-first from the ViewModel
 
+            val exclusionRadius = poiIconSizePx * 1.8f
+            val accepted = mutableSetOf<Long>()
+            val placed = mutableListOf<Offset>()
+            val countByCategory = mutableMapOf<PoiCategory, Int>()
+
+            for ((pos, poi) in candidates) {
+                if ((countByCategory[poi.category] ?: 0) >= 10) continue
+                val blocked = placed.any { aPos ->
+                    val dx = aPos.x - pos.x
+                    val dy = aPos.y - pos.y
+                    sqrt(dx * dx + dy * dy) < exclusionRadius
+                }
+                if (!blocked) {
+                    accepted.add(poi.id)
+                    placed.add(pos)
+                    countByCategory[poi.category] = (countByCategory[poi.category] ?: 0) + 1
+                }
+            }
+            accepted
+        }
+
+        // ── Step 2: heading-dependent rendering ──────────────────────────────────
+        // Map accepted POIs to their current canvas positions using the live heading.
+        val visiblePois = remember(heading, pois, userLocation, maxDistanceM, widthPx, heightPx, arcR, acceptedPoiIds) {
+            if (userLocation == null) return@remember emptyList()
+            pois.mapNotNull { poi ->
+                if (acceptedPoiIds != null && poi.id !in acceptedPoiIds) return@mapNotNull null
+                val distKm = distanceTo(userLocation, poi.location)
+                val distM = distKm * 1000f
+                if (distM > maxDistanceM) return@mapNotNull null
                 val bearing = bearingToFloat(userLocation, poi.location)
                 val angle = (bearing - heading - 90.0).withRadians()
                 val normalizedDist = (distM / maxDistanceM).coerceIn(0f, 1f)
@@ -85,24 +131,6 @@ fun CompassView(
                 if (y >= arcCenterY) null
                 else Triple(Offset(x, y), poi, distM)
             }
-
-            if (!deduplicateOverlaps) return@remember all
-
-            // Greedy spatial deduplication — pois list is already nearest-first.
-            // Each accepted icon claims an exclusion circle; any candidate whose centre
-            // falls inside that circle is dropped so icons never visually overlap.
-            val exclusionRadius = poiIconSizePx * 1.8f
-            val accepted = mutableListOf<Triple<Offset, PointOfInterest, Float>>()
-            for (candidate in all) {
-                val (pos) = candidate
-                val blocked = accepted.any { (aPos) ->
-                    val dx = aPos.x - pos.x
-                    val dy = aPos.y - pos.y
-                    sqrt(dx * dx + dy * dy) < exclusionRadius
-                }
-                if (!blocked) accepted.add(candidate)
-            }
-            accepted
         }
 
         Canvas(

@@ -314,17 +314,12 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
                 CompassView(
                     heading = effectiveHeading,
                     deduplicateOverlaps = viewModel.smartFilterEnabled,
-                    pois = applySmartFilter(
-                        pois = viewModel.pois.filter { poi ->
-                            val categoryMatch = poi.category in viewModel.activeFilters
-                            val favoriteMatch = poi.id in viewModel.favorites
-                            if (viewModel.showFavoritesOnly) favoriteMatch && categoryMatch
-                            else categoryMatch
-                        },
-                        userLocation = viewModel.userLocation,
-                        enabled = viewModel.smartFilterEnabled,
-                        favorites = viewModel.favorites
-                    ),
+                    pois = viewModel.pois.filter { poi ->
+                        val categoryMatch = poi.category in viewModel.activeFilters
+                        val favoriteMatch = poi.id in viewModel.favorites
+                        if (viewModel.showFavoritesOnly) favoriteMatch && categoryMatch
+                        else categoryMatch
+                    },
                     userLocation = viewModel.userLocation,
                     maxDistanceM = viewModel.maxCompassDistanceM,
                     onPoiClick = { viewModel.selectedPoi = it },
