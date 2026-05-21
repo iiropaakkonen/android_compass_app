@@ -16,4 +16,12 @@ class AppSettings(context: Context) {
     var compassSmoothing: Boolean
         get() = prefs.getBoolean("compass_smoothing", true)
         set(value) { prefs.edit().putBoolean("compass_smoothing", value).apply() }
+
+    // null = default Hextech theme; any float 0–360 = randomized hue seed
+    var randomThemeHue: Float?
+        get() = prefs.getFloat("random_theme_hue", -1f).let { if (it < 0f) null else it }
+        set(value) {
+            if (value == null) prefs.edit().remove("random_theme_hue").apply()
+            else prefs.edit().putFloat("random_theme_hue", value).apply()
+        }
 }

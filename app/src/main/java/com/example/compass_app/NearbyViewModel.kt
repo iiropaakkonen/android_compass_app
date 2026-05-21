@@ -76,6 +76,20 @@ class   NearbyViewModel(application: Application) : AndroidViewModel(application
         appSettings.compassSmoothing = compassSmoothingEnabled
     }
 
+    var themeHue by mutableStateOf(appSettings.randomThemeHue)
+        private set
+
+    fun randomizeTheme() {
+        val hue = (Math.random() * 360).toFloat()
+        themeHue = hue
+        appSettings.randomThemeHue = hue
+    }
+
+    fun resetTheme() {
+        themeHue = null
+        appSettings.randomThemeHue = null
+    }
+
     fun toggleFilter(category: PoiCategory) {
         activeFilters = if (activeFilters.contains(category)) activeFilters - category
         else activeFilters + category
