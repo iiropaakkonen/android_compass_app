@@ -59,7 +59,7 @@ fun NearbyPOIScreen(
             ) {
                 Text(
                     text = "Nearby Locations",
-                    style = MaterialTheme.typography.headlineSmall
+                    style = MaterialTheme.typography.titleLarge
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box {
@@ -70,7 +70,10 @@ fun NearbyPOIScreen(
                             else
                                 ButtonDefaults.outlinedButtonColors()
                         ) {
-                            Text("Filter")
+                            Text(
+                                text = "Filter",
+                                style = MaterialTheme.typography.labelSmall
+                            )
                         }
                         DropdownMenu(
                             expanded = filterMenuExpanded,
