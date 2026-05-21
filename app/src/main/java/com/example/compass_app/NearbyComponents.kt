@@ -215,7 +215,7 @@ fun NearbyPOIScreen(
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
         ) {
-            Text("+", style = MaterialTheme.typography.titleLarge)
+            Text("+", style = MaterialTheme.typography.labelLarge)
         }
     }
 
@@ -258,7 +258,7 @@ fun POI_Item(
 ) {
     Surface(
         shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = MaterialTheme.colorScheme.onTertiary,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 1.dp)

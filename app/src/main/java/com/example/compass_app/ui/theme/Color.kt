@@ -9,10 +9,14 @@ val HextechBlue = Color(0xFF548CB4)  // Official LoL blue
 val Parchment   = Color(0xFFEDDC91)  // Light yellow — text/highlights
 val Obsidian    = Color(0xFF0A0E1A)  // Near-black for deep backgrounds
 
+val Golden = Color(0xFF323438)
+
 // Dark Theme
 val DarkPrimary    = HextechGold
 val DarkSecondary  = HextechBlue
 val DarkTertiary   = Parchment
+
+val DarkButtons = Golden
 
 // Light Theme
 val LightPrimary   = HextechBlue

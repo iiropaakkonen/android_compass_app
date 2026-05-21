@@ -16,6 +16,7 @@ private val DarkColorScheme = darkColorScheme(
     tertiary = DarkTertiary,
     background = DarkBackground,
     primaryContainer = DarkContainer,
+    onTertiary = DarkButtons
 )
 
 private val LightColorScheme = lightColorScheme(
