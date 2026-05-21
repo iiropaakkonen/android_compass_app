@@ -112,8 +112,9 @@ object CompassWidgetRenderer {
         }
 
         val cx         = widthPx / 2f
-        val arcCenterY = heightPx.toFloat()   // arc base at bitmap bottom, same as CompassView
-        val arcR       = widthPx * 0.47f
+        val arcCenterY = heightPx.toFloat()
+        // Cap arcR so the semicircle always fits: leave at least 15% of height above the arc for POIs
+        val arcR       = minOf(widthPx * 0.47f, heightPx * 0.85f)
 
         // ── Clip to upper semicircle ──────────────────────────────────────────
         val clipPath = Path().apply {
@@ -181,7 +182,7 @@ object CompassWidgetRenderer {
         val icons        = getIconBitmaps(context, baseIconPx)
 
         val minVisualRadius = arcR + baseIconHalf + 4f
-        val maxVisualRadius = arcCenterY - baseIconHalf - 6f
+        val maxVisualRadius = (arcCenterY - baseIconHalf - 6f).coerceAtLeast(minVisualRadius)
 
         val iconPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         val distPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {

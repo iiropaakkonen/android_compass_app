@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 
 class FovCompassWidget : AppWidgetProvider() {
 
@@ -21,5 +22,17 @@ class FovCompassWidget : AppWidgetProvider() {
         appWidgetIds: IntArray
     ) {
         context.startForegroundService(Intent(context, FovCompassWidgetService::class.java))
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle
+    ) {
+        context.startForegroundService(
+            Intent(context, FovCompassWidgetService::class.java)
+                .setAction(FovCompassWidgetService.ACTION_FORCE_UPDATE)
+        )
     }
 }

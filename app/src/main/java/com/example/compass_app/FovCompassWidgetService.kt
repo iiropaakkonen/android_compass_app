@@ -19,6 +19,10 @@ import kotlin.math.min
 
 class FovCompassWidgetService : Service(), SensorEventListener {
 
+    companion object {
+        const val ACTION_FORCE_UPDATE = "com.example.compass_app.FOV_FORCE_UPDATE"
+    }
+
     private lateinit var sensorManager: SensorManager
     private var orientationSensor: Sensor? = null
 
@@ -40,7 +44,13 @@ class FovCompassWidgetService : Service(), SensorEventListener {
         sensorManager.registerListener(this, orientationSensor, SensorManager.SENSOR_DELAY_UI)
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_FORCE_UPDATE) {
+            val heading = lastHeading
+            if (!heading.isNaN()) renderHandler.post { pushWidgetUpdate(heading) }
+        }
+        return START_STICKY
+    }
 
     override fun onDestroy() {
         super.onDestroy()
@@ -77,23 +87,21 @@ class FovCompassWidgetService : Service(), SensorEventListener {
         val widgetIds = manager.getAppWidgetIds(ComponentName(this, FovCompassWidget::class.java))
         if (widgetIds.isEmpty()) return
 
-        // Render at the actual on-screen pixel size for crisp output
-        val options  = manager.getAppWidgetOptions(widgetIds[0])
-        val density  = resources.displayMetrics.density
-        val widthPx  = (options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,  300) * density).toInt().coerceAtLeast(300)
-        val heightPx = (options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,  80) * density).toInt().coerceAtLeast(80)
-
-        val bitmap = FovCompassWidgetRenderer.render(this, widthPx, heightPx, heading)
-
-        val views = RemoteViews(packageName, R.layout.widget_fov_compass)
-        views.setImageViewBitmap(R.id.widget_fov_compass_image, bitmap)
-        views.setOnClickPendingIntent(
-            R.id.widget_fov_root,
-            PendingIntent.getActivity(
-                this, 0, Intent(this, MainActivity::class.java),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
+        val density   = resources.displayMetrics.density
+        val tapIntent = PendingIntent.getActivity(
+            this, 0, Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        manager.updateAppWidget(widgetIds, views)
+
+        for (id in widgetIds) {
+            val options  = manager.getAppWidgetOptions(id)
+            val widthPx  = (options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,  300) * density).toInt().coerceAtLeast(300)
+            val heightPx = (options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,  80) * density).toInt().coerceAtLeast(80)
+            val bitmap   = FovCompassWidgetRenderer.render(this, widthPx, heightPx, heading)
+            val views    = RemoteViews(packageName, R.layout.widget_fov_compass)
+            views.setImageViewBitmap(R.id.widget_fov_compass_image, bitmap)
+            views.setOnClickPendingIntent(R.id.widget_fov_root, tapIntent)
+            manager.updateAppWidget(id, views)
+        }
     }
 }
