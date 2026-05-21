@@ -309,8 +309,6 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
                 }
 
 
-                Spacer(modifier = Modifier.weight(1f))
-
                 CompassView(
                     heading = effectiveHeading,
                     deduplicateOverlaps = viewModel.smartFilterEnabled,
@@ -325,7 +323,7 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
                     onPoiClick = { viewModel.selectedPoi = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(2.5f)
+                        .weight(1f)
                 )
 
                 Text(

@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
@@ -48,8 +47,8 @@ fun CompassView(
 
         val cx = widthPx / 2f
 
-        // Compass size: Encompass ~75% of the screen width
-        val arcR = widthPx * 0.375f
+        // Arc fits the canvas: cap radius so the semicircle doesn't overflow the height
+        val arcR = min(widthPx * 0.375f, heightPx * 0.85f)
         val arcCenterY = heightPx
 
         val poiIconSizePx = (20f * pxPerDp).toInt()
@@ -60,13 +59,13 @@ fun CompassView(
                     ?.toBitmap(poiIconSizePx, poiIconSizePx)
             }
         }
-        
+
         // POIs originate from the outer edge of the compass
         val minVisualRadius = arcR + (2f * pxPerDp)
-        
-        // Make them extend very far - beyond the screen height if necessary
-        // Using a multiplier to push them way out
-        val maxVisualRadius = heightPx * 3.0f 
+
+        // Cap so the furthest icon's centre stays inside the canvas (y >= 0).
+        // Worst case is a POI directly ahead (sin = -1): y = heightPx - poiRadius >= 0.
+        val maxVisualRadius = (heightPx - poiIconSizePx / 2f).coerceAtLeast(minVisualRadius)
 
         // ── Step 1: heading-independent selection ────────────────────────────────
         // Project every POI onto the compass using a fixed north-up reference
@@ -136,19 +135,17 @@ fun CompassView(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(visiblePois) {
+                .pointerInput(visiblePois, poiIconSizePx) {
                     detectTapGestures { tap ->
-                        visiblePois
-                            .minByOrNull { (pos, _, _) ->
-                                val dx = pos.x - tap.x
-                                val dy = pos.y - tap.y
-                                dx * dx + dy * dy
+                        val radiusSq = poiIconSizePx.toFloat() * poiIconSizePx.toFloat()
+                        visiblePois.forEach { (pos, poi, _) ->
+                            val dx = pos.x - tap.x
+                            val dy = pos.y - tap.y
+                            if (dx * dx + dy * dy < radiusSq) {
+                                onPoiClick(poi)
+                                return@detectTapGestures
                             }
-                            ?.let { (pos, poi, _) ->
-                                val dx = pos.x - tap.x
-                                val dy = pos.y - tap.y
-                                if (dx * dx + dy * dy < 40f * 40f) onPoiClick(poi)
-                            }
+                        }
                     }
                 }
         ) {
