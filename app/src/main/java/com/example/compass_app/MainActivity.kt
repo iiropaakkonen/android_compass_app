@@ -29,8 +29,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.compass_app.ui.theme.Compass_appTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -38,6 +38,7 @@ import com.google.android.gms.location.LocationServices
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var compass: CompassSensor
+    private val nearbyViewModel: NearbyViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,10 +50,15 @@ class MainActivity : ComponentActivity() {
         compass.start()
 
         setContent {
-            Compass_appTheme {
+            Compass_appTheme(randomHue = nearbyViewModel.themeHue) {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
-                        LocationPermissionWrapper(fusedLocationClient = fusedLocationClient, compassHeading = compass.heading, compass = compass)
+                        LocationPermissionWrapper(
+                            fusedLocationClient = fusedLocationClient,
+                            compassHeading = compass.heading,
+                            compass = compass,
+                            viewModel = nearbyViewModel
+                        )
                     }
                 }
             }
@@ -75,7 +81,7 @@ fun LocationPermissionWrapper(
     fusedLocationClient: FusedLocationProviderClient,
     compassHeading: StateFlow<Float>,
     compass: CompassSensor,
-    viewModel: NearbyViewModel = viewModel()
+    viewModel: NearbyViewModel
 ) {
     val context = LocalContext.current
     var hasPermission by remember {
@@ -275,6 +281,23 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
                                 },
                                 onClick = { viewModel.toggleCompassSmoothing() }
                             )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text("Randomize colors") },
+                                onClick = {
+                                    viewModel.randomizeTheme()
+                                    menuExpanded = false
+                                }
+                            )
+                            if (viewModel.themeHue != null) {
+                                DropdownMenuItem(
+                                    text = { Text("Reset to default colors") },
+                                    onClick = {
+                                        viewModel.resetTheme()
+                                        menuExpanded = false
+                                    }
+                                )
+                            }
                         }
                     }
                     Text(
@@ -290,6 +313,7 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
 
                 CompassView(
                     heading = effectiveHeading,
+                    deduplicateOverlaps = viewModel.smartFilterEnabled,
                     pois = applySmartFilter(
                         pois = viewModel.pois.filter { poi ->
                             val categoryMatch = poi.category in viewModel.activeFilters

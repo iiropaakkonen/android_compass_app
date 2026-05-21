@@ -34,6 +34,7 @@ fun CompassView(
     pois: List<PointOfInterest> = emptyList(),
     userLocation: Location? = null,
     maxDistanceM: Float = 1000f,
+    deduplicateOverlaps: Boolean = false,
     onPoiClick: (PointOfInterest) -> Unit = {}
 ) {
     val colorUsed = MaterialTheme.colorScheme.secondary
@@ -67,29 +68,41 @@ fun CompassView(
         // Using a multiplier to push them way out
         val maxVisualRadius = heightPx * 3.0f 
 
-        val visiblePois = remember(heading, pois, userLocation, maxDistanceM, widthPx, heightPx, arcR) {
+        val visiblePois = remember(heading, pois, userLocation, maxDistanceM, widthPx, heightPx, arcR, deduplicateOverlaps) {
             if (userLocation == null) return@remember emptyList()
-            pois.mapNotNull { poi ->
+
+            val all = pois.mapNotNull { poi ->
                 val distKm = distanceTo(userLocation, poi.location)
                 val distM = distKm * 1000f
                 if (distM > maxDistanceM) return@mapNotNull null
 
                 val bearing = bearingToFloat(userLocation, poi.location)
-                
-                // Angle calculation relative to heading
                 val angle = (bearing - heading - 90.0).withRadians()
-                
-                // Scale distance linearly
                 val normalizedDist = (distM / maxDistanceM).coerceIn(0f, 1f)
                 val poiRadius = minVisualRadius + (maxVisualRadius - minVisualRadius) * normalizedDist
-                
                 val x = cx + poiRadius * cos(angle).toFloat()
                 val y = arcCenterY + poiRadius * sin(angle).toFloat()
-
-                // Only filter out points that are below the compass baseline (behind the user)
                 if (y >= arcCenterY) null
                 else Triple(Offset(x, y), poi, distM)
             }
+
+            if (!deduplicateOverlaps) return@remember all
+
+            // Greedy spatial deduplication — pois list is already nearest-first.
+            // Each accepted icon claims an exclusion circle; any candidate whose centre
+            // falls inside that circle is dropped so icons never visually overlap.
+            val exclusionRadius = poiIconSizePx * 1.8f
+            val accepted = mutableListOf<Triple<Offset, PointOfInterest, Float>>()
+            for (candidate in all) {
+                val (pos) = candidate
+                val blocked = accepted.any { (aPos) ->
+                    val dx = aPos.x - pos.x
+                    val dy = aPos.y - pos.y
+                    sqrt(dx * dx + dy * dy) < exclusionRadius
+                }
+                if (!blocked) accepted.add(candidate)
+            }
+            accepted
         }
 
         Canvas(

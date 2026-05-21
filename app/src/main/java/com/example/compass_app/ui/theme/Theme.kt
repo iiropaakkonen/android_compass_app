@@ -1,14 +1,13 @@
 package com.example.compass_app.ui.theme
 
-import android.app.Activity
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
@@ -24,31 +23,29 @@ private val LightColorScheme = lightColorScheme(
     secondary = LightSecondary,
     tertiary = LightTertiary,
     background = LightBackground
+)
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+private fun schemeFromHue(hue: Float) = darkColorScheme(
+    primary         = Color.hsl(hue,                    0.75f, 0.60f),
+    secondary       = Color.hsl((hue + 120f) % 360f,   0.65f, 0.55f),
+    tertiary        = Color.hsl((hue + 240f) % 360f,   0.70f, 0.75f),
+    background      = Color.hsl(hue,                    0.20f, 0.10f),
+    primaryContainer= Color.hsl(hue,                    0.25f, 0.07f),
 )
 
 @Composable
 fun Compass_appTheme(
     darkTheme: Boolean = true,
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false,
+    randomHue: Float? = null,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
+        randomHue != null -> schemeFromHue(randomHue)
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
