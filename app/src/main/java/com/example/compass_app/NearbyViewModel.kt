@@ -63,6 +63,18 @@ class   NearbyViewModel(application: Application) : AndroidViewModel(application
 
     var activeFilters by mutableStateOf(PoiCategory.entries.toSet())
     var showFavoritesOnly by mutableStateOf(false)
+    var smartFilterEnabled by mutableStateOf(appSettings.smartFilterEnabled)
+    var compassSmoothingEnabled by mutableStateOf(appSettings.compassSmoothing)
+
+    fun toggleSmartFilter() {
+        smartFilterEnabled = !smartFilterEnabled
+        appSettings.smartFilterEnabled = smartFilterEnabled
+    }
+
+    fun toggleCompassSmoothing() {
+        compassSmoothingEnabled = !compassSmoothingEnabled
+        appSettings.compassSmoothing = compassSmoothingEnabled
+    }
 
     fun toggleFilter(category: PoiCategory) {
         activeFilters = if (activeFilters.contains(category)) activeFilters - category

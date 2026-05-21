@@ -175,19 +175,23 @@ fun NearbyPOIScreen(
                             if (viewModel.showFavoritesOnly) favoriteMatch && categoryMatch
                             else categoryMatch
                         }
-                        val sortedPois = if (userLoc != null) {
-                            filteredPois
-                                .map { it to distanceTo(userLoc, it.location) }
-                                .sortedBy { it.second }
+                        val smartPois = applySmartFilter(
+                            pois = filteredPois,
+                            userLocation = userLoc,
+                            enabled = viewModel.smartFilterEnabled,
+                            favorites = viewModel.favorites
+                        )
+                        val displayPois = if (userLoc != null) {
+                            smartPois.map { it to distanceTo(userLoc, it.location) }
                         } else {
-                            filteredPois.map { it to null }
+                            smartPois.map { it to null }
                         }
 
-                        if (sortedPois.isEmpty() && !viewModel.isLoading) {
+                        if (displayPois.isEmpty() && !viewModel.isLoading) {
                             Text("No locations found nearby.")
                         } else {
                             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                items(sortedPois) { (poi, distance) ->
+                                items(displayPois) { (poi, distance) ->
                                     POI_Item(
                                         poi = poi,
                                         distance = distance,

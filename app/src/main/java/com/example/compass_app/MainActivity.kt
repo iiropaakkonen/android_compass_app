@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
             Compass_appTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
-                        LocationPermissionWrapper(fusedLocationClient = fusedLocationClient, compassHeading = compass.heading)
+                        LocationPermissionWrapper(fusedLocationClient = fusedLocationClient, compassHeading = compass.heading, compass = compass)
                     }
                 }
             }
@@ -74,6 +74,7 @@ class MainActivity : ComponentActivity() {
 fun LocationPermissionWrapper(
     fusedLocationClient: FusedLocationProviderClient,
     compassHeading: StateFlow<Float>,
+    compass: CompassSensor,
     viewModel: NearbyViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -93,6 +94,10 @@ fun LocationPermissionWrapper(
 
     if (hasPermission) {
         LaunchedEffect(Unit) { viewModel.startLocationUpdates(fusedLocationClient) }
+        // Sync ViewModel smoothing preference to sensor on first composition and on change
+        LaunchedEffect(viewModel.compassSmoothingEnabled) {
+            compass.smoothingEnabled = viewModel.compassSmoothingEnabled
+        }
         MainAppContent(viewModel = viewModel, compassHeading = compassHeading)
     } else {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -238,6 +243,38 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
                                 },
                                 onClick = { viewModel.toggleInvertDragDirection() }
                             )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.width(220.dp)
+                                    ) {
+                                        Text("Smart filter", modifier = Modifier.weight(1f))
+                                        Switch(
+                                            checked = viewModel.smartFilterEnabled,
+                                            onCheckedChange = null
+                                        )
+                                    }
+                                },
+                                onClick = { viewModel.toggleSmartFilter() }
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.width(220.dp)
+                                    ) {
+                                        Text("Compass smoothing", modifier = Modifier.weight(1f))
+                                        Switch(
+                                            checked = viewModel.compassSmoothingEnabled,
+                                            onCheckedChange = null
+                                        )
+                                    }
+                                },
+                                onClick = { viewModel.toggleCompassSmoothing() }
+                            )
                         }
                     }
                     Text(
@@ -253,12 +290,17 @@ fun HeaderSection(modifier: Modifier = Modifier, compassHeading: StateFlow<Float
 
                 CompassView(
                     heading = effectiveHeading,
-                    pois = viewModel.pois.filter { poi ->
-                        val categoryMatch = poi.category in viewModel.activeFilters
-                        val favoriteMatch = poi.id in viewModel.favorites
-                        if (viewModel.showFavoritesOnly) favoriteMatch && categoryMatch
-                        else categoryMatch
-                    },
+                    pois = applySmartFilter(
+                        pois = viewModel.pois.filter { poi ->
+                            val categoryMatch = poi.category in viewModel.activeFilters
+                            val favoriteMatch = poi.id in viewModel.favorites
+                            if (viewModel.showFavoritesOnly) favoriteMatch && categoryMatch
+                            else categoryMatch
+                        },
+                        userLocation = viewModel.userLocation,
+                        enabled = viewModel.smartFilterEnabled,
+                        favorites = viewModel.favorites
+                    ),
                     userLocation = viewModel.userLocation,
                     maxDistanceM = viewModel.maxCompassDistanceM,
                     onPoiClick = { viewModel.selectedPoi = it },

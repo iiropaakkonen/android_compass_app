@@ -8,4 +8,12 @@ class AppSettings(context: Context) {
     var invertDragDirection: Boolean
         get() = prefs.getBoolean("invert_drag_direction", true)
         set(value) { prefs.edit().putBoolean("invert_drag_direction", value).apply() }
+
+    var smartFilterEnabled: Boolean
+        get() = prefs.getBoolean("smart_filter_enabled", false)
+        set(value) { prefs.edit().putBoolean("smart_filter_enabled", value).apply() }
+
+    var compassSmoothing: Boolean
+        get() = prefs.getBoolean("compass_smoothing", true)
+        set(value) { prefs.edit().putBoolean("compass_smoothing", value).apply() }
 }

@@ -26,19 +26,22 @@ data class PointOfInterest(
 /**
  * Enum for filtering POIs by category, mapped from the Python script logic.
  */
-enum class PoiCategory(val displayName: String) {
-    FOOD_AND_DRINK("Food & Drink"),
-    ACCOMMODATION("Accommodation"),
-    SIGHTSEEING_AND_CULTURE("Sightseeing & Culture"),
-    LEISURE_AND_ACTIVITIES("Leisure & Activities"),
-    HEALTH("Health"),
-    MONEY("Money"),
-    TRANSPORT("Transport"),
-    GROCERY_AND_FOOD_SHOPS("Grocery & Food Shops"),
-    RETAIL_SHOPPING("Retail Shopping"),
-    SERVICES("Services"),
-    OTHER("Other")
+// weight: importance for weighted-score mode (1=low … 5=high)
+// maxSlots: per-category cap for category-slots mode
+enum class PoiCategory(val displayName: String, val weight: Int, val maxSlots: Int) {
+    FOOD_AND_DRINK("Food & Drink",           weight = 3, maxSlots = 10),
+    ACCOMMODATION("Accommodation",           weight = 4, maxSlots =  8),
+    SIGHTSEEING_AND_CULTURE("Sightseeing & Culture", weight = 4, maxSlots = 10),
+    LEISURE_AND_ACTIVITIES("Leisure & Activities",   weight = 3, maxSlots =  8),
+    HEALTH("Health",                         weight = 5, maxSlots = 15),
+    MONEY("Money",                           weight = 4, maxSlots =  8),
+    TRANSPORT("Transport",                   weight = 4, maxSlots =  8),
+    GROCERY_AND_FOOD_SHOPS("Grocery & Food Shops",   weight = 4, maxSlots = 10),
+    RETAIL_SHOPPING("Retail Shopping",       weight = 2, maxSlots =  5),
+    SERVICES("Services",                     weight = 2, maxSlots =  5),
+    OTHER("Other",                           weight = 1, maxSlots =  3)
 }
+
 
 // --- Overpass API Models ---
 
@@ -67,6 +70,20 @@ class LocationService {
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
+        .addInterceptor { chain ->
+            val request = chain.request().newBuilder()
+                .header("User-Agent", "CompassApp/1.0 (Android; contact=samutuulos@gmail.com)")
+                .header("Accept", "*/*")
+                .build()
+            var response = chain.proceed(request)
+            // Retry once on transient server rejection (406, 429, 503)
+            if (response.code in listOf(406, 429, 503)) {
+                response.close()
+                Thread.sleep(2000)
+                response = chain.proceed(request)
+            }
+            response
+        }
         .build()
 
     private fun buildApi(baseUrl: String): OverpassApi = Retrofit.Builder()

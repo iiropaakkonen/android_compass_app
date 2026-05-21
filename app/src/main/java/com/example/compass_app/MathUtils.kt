@@ -29,6 +29,30 @@ fun bearingToFloat(from: Location, to: Location): Float {
     return ((atan2(x, y) * (180.0 / PI) + 360.0) % 360.0).toFloat()
 }
 
+fun applySmartFilter(
+    pois: List<PointOfInterest>,
+    userLocation: Location?,
+    enabled: Boolean,
+    favorites: Set<Long> = emptySet()
+): List<PointOfInterest> {
+    val sorted = if (userLocation != null)
+        pois.sortedBy { distanceTo(userLocation, it.location) }
+    else
+        pois
+
+    if (!enabled) return sorted
+
+    // Show only the nearest 10 POIs per category; favourites are never culled
+    val countByCategory = mutableMapOf<PoiCategory, Int>()
+    return sorted.filter { poi ->
+        val isFav = poi.id in favorites
+        val count = countByCategory.getOrDefault(poi.category, 0)
+        val allow = isFav || count < 10
+        if (!isFav && allow) countByCategory[poi.category] = count + 1
+        allow
+    }
+}
+
 fun bearingTo(from: Location, to: Location): String {
     val lat1 = from.lat * (PI / 180.0)
     val lat2 = to.lat * (PI / 180.0)
