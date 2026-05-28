@@ -10,4 +10,5 @@
     android:initialLayout="@layout/widget_fov_compass"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
-    android:description="@string/app_name" />
+    android:description="@string/app_name"
+    android:previewImage="@drawable/fov_compass_preview" />

@@ -10,4 +10,5 @@
     android:initialLayout="@layout/widget_nearby_list"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
-    android:description="@string/app_name" />
+    android:description="@string/app_name"
+    android:previewImage="@drawable/list_widget_preview" />
