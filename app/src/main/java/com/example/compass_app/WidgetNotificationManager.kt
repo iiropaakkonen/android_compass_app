@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
+import android.os.Build
 import androidx.core.app.NotificationCompat
 
 object WidgetNotificationManager {
@@ -32,6 +33,7 @@ object WidgetNotificationManager {
     }
 
     private fun createChannel(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel = NotificationChannel(
             CHANNEL_ID,
             "Compass Widget",
