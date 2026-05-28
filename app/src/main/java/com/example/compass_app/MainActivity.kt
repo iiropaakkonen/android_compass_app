@@ -1,6 +1,7 @@
 package com.example.compass_app
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.SensorManager
 import android.os.Bundle
@@ -49,6 +50,8 @@ class MainActivity : ComponentActivity() {
         compass = CompassSensor(sensorManager)
         compass.start()
 
+        handleWidgetDeepLink(intent)
+
         setContent {
             Compass_appTheme(randomHue = nearbyViewModel.themeHue) {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -65,6 +68,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleWidgetDeepLink(intent)
+    }
+
     override fun onPause() {
         super.onPause()
         compass.stop()
@@ -73,6 +81,14 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         compass.start()
+    }
+
+    private fun handleWidgetDeepLink(intent: Intent) {
+        val lat = intent.getFloatExtra("poi_lat", Float.NaN)
+        val lon = intent.getFloatExtra("poi_lon", Float.NaN)
+        if (!lat.isNaN() && !lon.isNaN()) {
+            nearbyViewModel.selectPoiNear(lat, lon)
+        }
     }
 }
 

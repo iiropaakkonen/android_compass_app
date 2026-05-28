@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout for the Nearby Locations list widget.
+    Only RemoteViews-compatible views are allowed here.
+
+    A ListView is used instead of a bitmap so each row is independently tappable.
+    The adapter is wired in NearbyListWidget via setRemoteAdapter().
+    Tapping any row fires the PendingIntentTemplate set in NearbyListWidget.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/nearby_list_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/bg_widget_nearby"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/nearby_list_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Nearby"
+        android:textColor="#C89B3C"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:paddingBottom="4dp" />
+
+    <ListView
+        android:id="@+id/nearby_list_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:divider="#1AFFFFFF"
+        android:dividerHeight="1dp" />
+
+    <TextView
+        android:id="@+id/nearby_list_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No locations available"
+        android:textColor="#80FFFFFF"
+        android:textSize="12sp"
+        android:gravity="center"
+        android:paddingTop="16dp"
+        android:visibility="gone" />
+
+</LinearLayout>

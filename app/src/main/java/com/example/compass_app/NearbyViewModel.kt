@@ -295,4 +295,37 @@ class   NearbyViewModel(application: Application) : AndroidViewModel(application
     fun cleanExpiredCache() {
         tileCache.cleanExpired()
     }
+
+    // Coordinates from a widget deep-link that haven't been matched to a POI yet
+    private var pendingPoiLat = Float.NaN
+    private var pendingPoiLon = Float.NaN
+
+    /** Called by MainActivity when launched from the list widget. */
+    fun selectPoiNear(lat: Float, lon: Float) {
+        val found = pois.find {
+            kotlin.math.abs(it.location.lat - lat) < 0.00001f &&
+            kotlin.math.abs(it.location.lon - lon) < 0.00001f
+        }
+        if (found != null) {
+            selectedPoi = found
+        } else {
+            // POIs not loaded yet — store and resolve in tryResolvePendingPoi()
+            pendingPoiLat = lat
+            pendingPoiLon = lon
+        }
+    }
+
+    /** Called from a LaunchedEffect(pois) to resolve a pending widget deep-link. */
+    fun tryResolvePendingPoi() {
+        if (pendingPoiLat.isNaN()) return
+        val found = pois.find {
+            kotlin.math.abs(it.location.lat - pendingPoiLat) < 0.00001f &&
+            kotlin.math.abs(it.location.lon - pendingPoiLon) < 0.00001f
+        }
+        if (found != null) {
+            selectedPoi = found
+            pendingPoiLat = Float.NaN
+            pendingPoiLon = Float.NaN
+        }
+    }
 }

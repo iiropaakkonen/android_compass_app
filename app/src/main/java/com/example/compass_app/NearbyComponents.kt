@@ -11,6 +11,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +45,9 @@ fun NearbyPOIScreen(
     modifier: Modifier = Modifier,
     viewModel: NearbyViewModel
 ) {
+    // Resolve any POI deep-link from the list widget once pois are loaded
+    LaunchedEffect(viewModel.pois) { viewModel.tryResolvePendingPoi() }
+
     var showAddDialog by remember { mutableStateOf(false) }
     var filterMenuExpanded by remember { mutableStateOf(false) }
     val allCategories = PoiCategory.entries

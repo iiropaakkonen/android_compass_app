@@ -1,5 +1,7 @@
 package com.example.compass_app
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -54,6 +56,13 @@ object WidgetDataStore {
                 pois.take(MAX_POIS).map { WidgetPoi(it.name, it.category.name, it.location.lat, it.location.lon, it.id < 0) }
             ))
             apply()
+        }
+
+        // Notify the list widget so it re-fetches row data immediately
+        val manager = AppWidgetManager.getInstance(context)
+        val ids = manager.getAppWidgetIds(ComponentName(context, NearbyListWidget::class.java))
+        if (ids.isNotEmpty()) {
+            manager.notifyAppWidgetViewDataChanged(ids, R.id.nearby_list_view)
         }
     }
 
