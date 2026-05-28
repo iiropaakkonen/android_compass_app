@@ -4,12 +4,13 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 
 class FovCompassWidget : AppWidgetProvider() {
 
     override fun onEnabled(context: Context) {
-        context.startForegroundService(Intent(context, FovCompassWidgetService::class.java))
+        startService(context, Intent(context, FovCompassWidgetService::class.java))
     }
 
     override fun onDisabled(context: Context) {
@@ -21,7 +22,7 @@ class FovCompassWidget : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        context.startForegroundService(Intent(context, FovCompassWidgetService::class.java))
+        startService(context, Intent(context, FovCompassWidgetService::class.java))
     }
 
     override fun onAppWidgetOptionsChanged(
@@ -30,9 +31,18 @@ class FovCompassWidget : AppWidgetProvider() {
         appWidgetId: Int,
         newOptions: Bundle
     ) {
-        context.startForegroundService(
+        startService(
+            context,
             Intent(context, FovCompassWidgetService::class.java)
                 .setAction(FovCompassWidgetService.ACTION_FORCE_UPDATE)
         )
+    }
+
+    private fun startService(context: Context, intent: Intent) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
     }
 }

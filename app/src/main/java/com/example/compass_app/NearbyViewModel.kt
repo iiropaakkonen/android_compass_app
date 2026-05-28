@@ -211,13 +211,13 @@ class   NearbyViewModel(application: Application) : AndroidViewModel(application
             try {
                 val centerLocation = TileCoordinate.getCenterLocation(tile)
                 Log.d("TileCache", "  Tile center: ${centerLocation.lat}, ${centerLocation.lon}")
-                Log.d("TileCache", "  API query: 2km radius around center")
+                Log.d("TileCache", "  API query: 3km radius around center")
 
                 val startTime = System.currentTimeMillis()
                 val fetchedPois = locationService.fetchNearbyPOIs(
                     centerLocation.lat,
                     centerLocation.lon,
-                    radius = 2000
+                    radius = 3000
                 )
                 val duration = System.currentTimeMillis() - startTime
 
@@ -243,16 +243,20 @@ class   NearbyViewModel(application: Application) : AndroidViewModel(application
 
     private fun updatePoisFromCache() {
         val currentLoc = userLocation
+        val allCachedPois = tileCache.getAllPois()
+
         val cachedPois = if (currentLoc != null) {
-            tileCache.getAllPois().filter {
-                distanceTo(currentLoc, it.location) <= 1.0f || it.id in favorites
+            val within1km = allCachedPois.filter { distanceTo(currentLoc, it.location) <= 1.0f }
+            val displayRadius = if (within1km.size < 10) 3.0f else 1.0f
+            allCachedPois.filter {
+                distanceTo(currentLoc, it.location) <= displayRadius || it.id in favorites
             }
         } else {
             emptyList()
         }
 
         Log.d("TileCache", "📍 UPDATING DISPLAYED POIs")
-        Log.d("TileCache", "  Total POIs in cache: ${cachedPois.size}")
+        Log.d("TileCache", "  Total POIs in cache: ${allCachedPois.size}")
 
         val merged = (cachedPois + customPois).distinctBy { it.id }
         pois = if (currentLoc != null) {
@@ -266,8 +270,7 @@ class   NearbyViewModel(application: Application) : AndroidViewModel(application
 
         val cacheStats = tileCache.getStats()
         Log.d("TileCache", "  Loaded tiles: ${cacheStats.validTiles}")
-        Log.d("TileCache", "  Display radius: 1.0km")
-        Log.d("TileCache", "  POIs within 1km: ${pois.size}")
+        Log.d("TileCache", "  POIs displayed: ${pois.size}")
     }
 
     fun refreshPOIs() {
