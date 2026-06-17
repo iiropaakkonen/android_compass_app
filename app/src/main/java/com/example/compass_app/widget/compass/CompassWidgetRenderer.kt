@@ -12,21 +12,7 @@ import kotlin.math.sin
 import android.graphics.LinearGradient
 import android.graphics.Shader
 
-/**
- * Renders a bitmap that visually matches the semi-circular CompassView.
- *
- * Draw order:
- *   1. Tick marks + cardinal labels inside the semicircle clip.
- *   2. clip released.
- *   3. POI icons in the clear space ABOVE the arc (outside the semicircle).
- *      Radius scales linearly with distance so close POIs sit just above the arc
- *      and distant ones float near the top of the bitmap — mirroring CompassView.
- *      Size and alpha both decrease with distance.
- *
- * Icons are loaded once at base resolution; RectF handles per-marker scaling.
- * The output bitmap is reused across frames to avoid per-frame GC pressure.
- * POI/location data is re-parsed from SharedPreferences at most once every 1.5 s.
- */
+
 object CompassWidgetRenderer {
 
     private var iconCache: Map<PoiCategory, Bitmap>? = null
