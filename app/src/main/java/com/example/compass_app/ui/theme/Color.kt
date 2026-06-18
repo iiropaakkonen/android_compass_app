@@ -2,7 +2,7 @@ package com.example.compass_app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// LoL / Hextech Palette
+// Colours
 val VoidDark    = Color(0xFF1A1F2E)  // Background — deep navy
 val HextechGold = Color(0xFFC89B3C)  // Primary gold — borders, accents
 val HextechBlue = Color(0xFF548CB4)  // Official LoL blue

@@ -11,9 +11,9 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 import java.util.concurrent.TimeUnit
 
-/**
- * Data class representing a Point of Interest (POI) from OpenStreetMap.
- */
+
+ // Data class representing a Point of Interest (POI) from OpenStreetMap.
+
 data class PointOfInterest(
     val id: Long,
     val name: String,
@@ -23,9 +23,9 @@ data class PointOfInterest(
     val tags: Map<String, String> = emptyMap()
 )
 
-/**
- * Enum for filtering POIs by category, mapped from the Python script logic.
- */
+
+// Enum for filtering POIs by category
+
 // weight: importance for weighted-score mode (1=low … 5=high)
 // maxSlots: per-category cap for category-slots mode
 enum class PoiCategory(val displayName: String, val weight: Int, val maxSlots: Int) {
@@ -43,7 +43,6 @@ enum class PoiCategory(val displayName: String, val weight: Int, val maxSlots: I
 }
 
 
-// --- Overpass API Models ---
 
 data class OverpassResponse(
     @SerializedName("elements") val elements: List<OverpassElement>
@@ -61,9 +60,7 @@ interface OverpassApi {
     suspend fun query(@Body data: okhttp3.RequestBody): OverpassResponse
 }
 
-/**
- * Service class to handle data fetching from Overpass API.
- */
+// data fetching from overpass
 class LocationService {
 
     private val okHttpClient = OkHttpClient.Builder()

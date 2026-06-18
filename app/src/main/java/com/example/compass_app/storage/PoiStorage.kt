@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
+// Functionalities to add favorites and custom locations.
 private data class StoredCustomPoi(
     val id: Long,
     val name: String,

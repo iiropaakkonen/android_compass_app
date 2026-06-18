@@ -7,6 +7,7 @@ import android.hardware.SensorManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+// Uses androids ORIENTATION sensor to find which orientation the phone is at
 class CompassSensor(private val sensorManager: SensorManager) : SensorEventListener {
 
     val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION)
@@ -42,11 +43,11 @@ class CompassSensor(private val sensorManager: SensorManager) : SensorEventListe
             return
         }
 
-        // Circular low-pass filter: find shortest angular path to avoid 0/360 wrap glitch
+        //tries to smooth the movement so the application doesnt look janky
+
         val delta = ((raw - smoothedHeading + 540f) % 360f) - 180f
         smoothedHeading = (smoothedHeading + delta * ALPHA + 360f) % 360f
 
-        // Only push to UI if the smoothed heading moved more than the threshold
         val current = _heading.value
         val diff = Math.abs(((smoothedHeading - current + 540f) % 360f) - 180f)
         if (diff >= THRESHOLD) {
@@ -55,6 +56,7 @@ class CompassSensor(private val sensorManager: SensorManager) : SensorEventListe
     }
 
     override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
+
 
     companion object {
         private const val ALPHA = 0.12f   // smoothing strength (lower = smoother but laggier)

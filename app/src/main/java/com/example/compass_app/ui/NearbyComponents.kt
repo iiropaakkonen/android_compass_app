@@ -45,7 +45,7 @@ fun NearbyPOIScreen(
     modifier: Modifier = Modifier,
     viewModel: NearbyViewModel
 ) {
-    // Resolve any POI deep-link from the list widget once pois are loaded
+
     LaunchedEffect(viewModel.pois) { viewModel.tryResolvePendingPoi() }
 
     var showAddDialog by remember { mutableStateOf(false) }

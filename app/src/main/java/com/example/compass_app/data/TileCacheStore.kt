@@ -13,10 +13,6 @@ object TileCacheStore {
 
     private val gson = Gson()
 
-    /**
-     * Records the current timestamp. Returns true if the app was absent longer than
-     * 3 hours, meaning the cache should be treated as expired and cleared.
-     */
     fun recordAppOpen(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val lastOpen = prefs.getLong(KEY_LAST_OPEN, 0L)
@@ -26,12 +22,16 @@ object TileCacheStore {
         return expired
     }
 
+    //saves state to Json
+
     fun save(context: Context, tiles: Map<String, CachedTile>) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putString(KEY_TILES, gson.toJson(tiles))
             .apply()
     }
+
+    //loads previously saved state from Json
 
     fun load(context: Context): Map<String, CachedTile> {
         val json = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -43,6 +43,8 @@ object TileCacheStore {
             emptyMap()
         }
     }
+
+    //clears saved state if app been down for 3 or more hours
 
     fun clear(context: Context) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

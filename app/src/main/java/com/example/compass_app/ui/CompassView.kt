@@ -60,17 +60,11 @@ fun CompassView(
             }
         }
 
-        // POIs originate from the outer edge of the compass
         val minVisualRadius = arcR + (2f * pxPerDp)
 
-        // Cap so the furthest icon's centre stays inside the canvas (y >= 0).
-        // Worst case is a POI directly ahead (sin = -1): y = heightPx - poiRadius >= 0.
+
         val maxVisualRadius = (heightPx - poiIconSizePx / 2f).coerceAtLeast(minVisualRadius)
 
-        // ── Step 1: heading-independent selection ────────────────────────────────
-        // Project every POI onto the compass using a fixed north-up reference
-        // (heading = 0) so the accepted set never changes as the user rotates.
-        // Only the POIs list, distance limit, and screen geometry are keys here.
         val acceptedPoiIds: Set<Long>? = remember(
             pois, userLocation, maxDistanceM, deduplicateOverlaps,
             poiIconSizePx, cx, arcCenterY, minVisualRadius, maxVisualRadius
@@ -112,8 +106,6 @@ fun CompassView(
             accepted
         }
 
-        // ── Step 2: heading-dependent rendering ──────────────────────────────────
-        // Map accepted POIs to their current canvas positions using the live heading.
         val visiblePois = remember(heading, pois, userLocation, maxDistanceM, widthPx, heightPx, arcR, acceptedPoiIds) {
             if (userLocation == null) return@remember emptyList()
             pois.mapNotNull { poi ->
@@ -169,15 +161,6 @@ fun CompassView(
             }
 
             clipPath(compassPath) {
-                /*drawArc(
-                    color = colorUsed,
-                    startAngle = 180f,
-                    sweepAngle = 180f,
-                    useCenter = false,
-                    topLeft = topLeft,
-                    size = arcSize,
-                    style = Fill
-                )*/
 
                 val tickPaint = android.graphics.Paint().apply {
                     color = android.graphics.Color.WHITE
@@ -281,7 +264,6 @@ fun CompassView(
 
 private fun Double.withRadians(): Double = Math.toRadians(this)
 
-/** Returns the ARGB int for a category — usable from non-Compose (widget renderer) code. */
 fun poiCategoryColorInt(category: PoiCategory): Int = poiCategoryColor(category).toArgb()
 
 fun poiCategoryColor(category: PoiCategory): Color = when (category) {

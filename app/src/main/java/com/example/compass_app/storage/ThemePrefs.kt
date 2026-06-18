@@ -3,14 +3,12 @@ package com.example.compass_app
 import android.content.Context
 import android.graphics.Color
 
-/**
- * Shared preferences bridge between the app's Compose theme and the home-screen widgets.
- * The app writes colours once per resume; the widget renderers read them as fallback-safe defaults.
- */
+// The Theme that defines the Themes
+// Light mode not ready, we are currently only using the dark mode.
+
 object ThemePrefs {
 
     private const val PREFS_NAME = "widget_prefs"
-
     private const val KEY_BACKGROUND           = "background_color"
     private const val KEY_SECONDARY_BACKGROUND = "secondary_background_color"
     private const val KEY_TICK                 = "tick_color"
@@ -26,7 +24,6 @@ object ThemePrefs {
     private const val LIGHT_SECONDARY_BG_DEFAULT = 0xFFD4C47A.toInt()
     private const val LIGHT_ACCENT_DEFAULT       = 0xFF548CB4.toInt()
 
-    /** Called from the app side (Compose SideEffect) whenever the color scheme is resolved. */
     fun save(context: Context, backgroundColor: Int, secondaryBackgroundColor: Int, tickColor: Int, accentColor: Int) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
             .putInt(KEY_BACKGROUND, backgroundColor)
